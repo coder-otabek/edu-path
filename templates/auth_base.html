@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="uz" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2563EB">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <title>{% block title %}{% endblock %} — {{ site.name|default:"EduPath" }}</title>
+
+  {% if site.favicon %}
+    <link rel="icon" href="{{ site.favicon.url }}">
+    <link rel="apple-touch-icon" href="{{ site.favicon.url }}">
+  {% else %}
+    {% load static %}
+    <link rel="icon" href="{% static 'img/favicon.svg' %}">
+  {% endif %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+  
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <style>
+    body {
+      padding-top: 0;
+      padding-bottom: 0;
+      background: var(--bg);
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="auth-page" data-gender="{{ user.gender|default:'male' }}">
+
+  {# Django Messages #}
+  {% if messages %}
+    <div class="toast-container" id="toastContainer">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}" data-autohide role="alert">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="toast-container" id="toastContainer"></div>
+  {% endif %}
+
+  {# Auth Hero #}
+  <div class="auth-hero">
+    <div class="auth-hero-circle-1"></div>
+    <div class="auth-hero-circle-2"></div>
+
+    <a href="/" class="auth-logo">
+      {% if site.logo %}
+        <img src="{{ site.logo.url }}" alt="{{ site.name }}">
+      {% else %}
+        <img src="{% static 'img/logo.png' %}" alt="{{ site.name|default:'EduPath' }}">
+      {% endif %}
+      <span class="auth-logo-name">{{ site.name|default:"EduPath" }}</span>
+    </a>
+
+    <h1 class="auth-hero-title">{% block hero_title %}{{ site.auth_hero_title|default:"Kelajagingni Rejalashtir" }}{% endblock %}</h1>
+    <p class="auth-hero-sub">{% block hero_sub %}{{ site.auth_hero_sub|default:"O'z imkoniyatlaringni bil, universitetingni top" }}{% endblock %}</p>
+  </div>
+
+  {# Auth Body #}
+  <div class="auth-body">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script src="{% static 'js/translations.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+  <script>
+  (function() {
+    const body = document.body;
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTheme  = urlParams.get('theme');
+    const urlLang   = urlParams.get('lang');
+    const theme = urlTheme || sessionStorage.getItem('edupath_session_theme') || localStorage.getItem('edupath_theme_mode') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const gender = body.getAttribute('data-gender') || localStorage.getItem('edupath_gender') || 'male';
+    const lang   = urlLang || localStorage.getItem('edupath_lang') || 'uz';
+    body.setAttribute('data-theme', theme);
+    body.setAttribute('data-gender', gender);
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('lang', lang);
+    if (urlTheme) { sessionStorage.setItem('edupath_session_theme', urlTheme); localStorage.setItem('edupath_theme_mode', urlTheme); }
+    if (urlLang)  localStorage.setItem('edupath_lang', urlLang);
+    localStorage.setItem('edupath_gender', gender);
+
+    // Hero title va sub ni tarjima qilamiz
+    const AUTH_TEXTS = {
+      uz: { hero_title: "Kelajagingni Rejalashtir", hero_sub: "O'z imkoniyatlaringni bil, universitetingni top",
+            login_title: "Xush kelibsiz!", login_sub: "Hisobingizga kiring va imkoniyatlaringizni kashf eting",
+            reg_title: "Hisob yarating", reg_sub: "Bepul ro'yxatdan o'ting va kelajagingizni rejalashtiring",
+            forgot_title: "Parolni tiklash", forgot_sub: "Emailingizga tasdiqlash kodi yuboramiz",
+            otp_title: "Emailingizni tekshiring", reset_title: "Yangi parol o'rnating", reset_sub: "Kuchli parol tanlang",
+            privacy_title: "Maxfiylik siyosati", privacy_sub: "Ma'lumotlaringiz qanday himoyalanadi",
+            terms_title: "Foydalanish shartlari", terms_sub: "Iltimos, diqqat bilan o'qing" },
+      ru: { hero_title: "Планируй своё будущее", hero_sub: "Узнай свои возможности, найди свой университет",
+            login_title: "Добро пожаловать!", login_sub: "Войдите в аккаунт и откройте свои возможности",
+            reg_title: "Создайте аккаунт", reg_sub: "Зарегистрируйтесь бесплатно и начните планирование",
+            forgot_title: "Восстановление пароля", forgot_sub: "Отправим код подтверждения на email",
+            otp_title: "Проверьте почту", reset_title: "Установите новый пароль", reset_sub: "Выберите надёжный пароль",
+            privacy_title: "Политика конфиденциальности", privacy_sub: "Как защищаются ваши данные",
+            terms_title: "Условия использования", terms_sub: "Пожалуйста, читайте внимательно" },
+      en: { hero_title: "Plan Your Future", hero_sub: "Know your potential, find your university",
+            login_title: "Welcome back!", login_sub: "Sign in and discover your opportunities",
+            reg_title: "Create an account", reg_sub: "Sign up free and start planning your future",
+            forgot_title: "Password recovery", forgot_sub: "We'll send a verification code to your email",
+            otp_title: "Check your email", reset_title: "Set a new password", reset_sub: "Choose a strong password",
+            privacy_title: "Privacy Policy", privacy_sub: "How your data is protected",
+            terms_title: "Terms of Use", terms_sub: "Please read carefully" },
+    };
+    document.addEventListener('DOMContentLoaded', function() {
+      const T = AUTH_TEXTS[lang] || AUTH_TEXTS.uz;
+      const heroTitle = document.querySelector('.auth-hero-title');
+      const heroSub   = document.querySelector('.auth-hero-sub');
+      if (heroTitle) heroTitle.textContent = T.hero_title;
+      if (heroSub)   heroSub.textContent   = T.hero_sub;
+      if (window.applyTranslations) window.applyTranslations();
+    });
+  })();
+  </script>
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

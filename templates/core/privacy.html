@@ -1,0 +1,18 @@
+{% extends "auth_base.html" %}
+{% block title %}Maxfiylik siyosati{% endblock %}
+{% block hero_title %}Maxfiylik siyosati{% endblock %}
+{% block hero_sub %}Ma'lumotlaringiz qanday himoyalanadi{% endblock %}
+
+{% block content %}
+  <h2 class="auth-title">Maxfiylik siyosati</h2>
+  <div style="font-size:.875rem;color:var(--text-secondary);line-height:1.8;">
+    <p style="margin-bottom:12px;">EduPath sizning shaxsiy ma'lumotlaringiz xavfsizligini ta'minlashga harakat qiladi.</p>
+    <h3 style="font-weight:700;color:var(--text-primary);margin:16px 0 8px;">Qanday ma'lumot yig'iladi</h3>
+    <p style="margin-bottom:12px;">Ism, familiya, email manzil va akademik ko'rsatkichlar (ixtiyoriy).</p>
+    <h3 style="font-weight:700;color:var(--text-primary);margin:16px 0 8px;">Ma'lumotlar qanday ishlatiladi</h3>
+    <p style="margin-bottom:12px;">Ma'lumotlar faqat AI tavsiyalar va platforma xizmatlarini yaxshilash uchun ishlatiladi.</p>
+    <h3 style="font-weight:700;color:var(--text-primary);margin:16px 0 8px;">Ma'lumotlarni o'chirish</h3>
+    <p>Hisobingizni o'chirishni xohlasangiz, <a href="mailto:{{ site.official_email|default:'info@edupath.uz' }}" style="color:var(--primary);">{{ site.official_email|default:'info@edupath.uz' }}</a> ga murojaat qiling.</p>
+  </div>
+  <p class="auth-footer mt-16"><a href="{% url 'accounts:register' %}">← Orqaga</a></p>
+{% endblock %}

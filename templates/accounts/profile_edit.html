@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Profilni Tahrirlash{% endblock %}
+
+{% block content %}
+
+  <div class="d-flex align-center gap-8 mb-20">
+    <a href="{% url 'accounts:profile' %}" style="color:var(--text-muted);">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <h1 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;"><span data-i18n="profile_edit_title">Profilni tahrirlash</span></h1>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    {# ---- Shaxsiy ---- #}
+    <div class="card mb-16">
+      <h2 class="section-title mb-16" data-i18n="profile_edit_personal">👤 Shaxsiy ma'lumotlar</h2>
+
+      <div class="form-group text-center">
+        <div class="profile-avatar-lg" style="margin:0 auto 12px;cursor:pointer;" onclick="document.getElementById('id_avatar').click()">
+          {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="Avatar" id="avatarPreview" style="width:100%;height:100%;object-fit:cover;">
+          {% else %}
+            <span id="avatarInitials">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </div>
+        <input type="file" id="id_avatar" name="avatar" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('id_avatar').click()"><span data-i18n="profile_edit_photo">Rasm o'zgartirish</span></button>
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="profile_edit_name">Ism</label>
+          <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" placeholder="Ismingiz">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="profile_edit_surname">Familiya</label>
+          <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" placeholder="Familiyangiz">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="profile_edit_bio">Qisqacha tanishuv</label>
+        <textarea name="bio" class="form-control" rows="3" placeholder="O'zingiz haqingizda qisqacha...">{{ profile.bio }}</textarea>
+      </div>
+    </div>
+
+    {# ---- Akademik ---- #}
+    <div class="card mb-16">
+      <h2 class="section-title mb-16" data-i18n="profile_edit_academic">🎓 Akademik natijalar</h2>
+
+      <div style="display:flex;gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="label_gpa">GPA</label>
+          <input type="number" name="gpa" class="form-control" value="{{ profile.gpa|default:'' }}" placeholder="4.5" step="0.1" min="0" max="5">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="label_ielts">IELTS</label>
+          <input type="number" name="ielts_score" class="form-control" value="{{ profile.ielts_score|default:'' }}" placeholder="7.0" step="0.5" min="0" max="9">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="label_sat">SAT</label>
+          <input type="number" name="sat_score" class="form-control" value="{{ profile.sat_score|default:'' }}" placeholder="1400" min="0" max="1600">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="profile_edit_olympiad">Olimpiada darajasi</label>
+        <select name="olympiad_level" class="form-control form-select">
+          <option value="" data-i18n="opt_select">— Tanlang —</option>
+          <option value="school"        {% if profile.olympiad_level == 'school' %}selected{% endif %} data-i18n="opt_school">Maktab</option>
+          <option value="district"      {% if profile.olympiad_level == 'district' %}selected{% endif %} data-i18n="opt_district">Tuman</option>
+          <option value="regional"      {% if profile.olympiad_level == 'regional' %}selected{% endif %} data-i18n="opt_regional">Viloyat</option>
+          <option value="national"      {% if profile.olympiad_level == 'national' %}selected{% endif %} data-i18n="opt_national">Respublika</option>
+          <option value="international" {% if profile.olympiad_level == 'international' %}selected{% endif %} data-i18n="opt_international">Xalqaro</option>
+        </select>
+      </div>
+    </div>
+
+    {# ---- Yo'nalish ---- #}
+    <div class="card mb-16">
+      <h2 class="section-title mb-16" data-i18n="profile_edit_direction">🎯 Yo'nalish va maqsad</h2>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="profile_edit_specialty">Mutaxassislik </label>
+        <input type="text" name="desired_specialty" class="form-control" value="{{ profile.desired_specialty }}" placeholder="Masalan: Dasturiy injiniring, Tibbiyot...">
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="label_main_subject">Asosiy fan</label>
+          <select name="main_subject" class="form-control form-select">
+            <option value="" data-i18n="opt_select">— Tanlang —</option>
+            <option value="math"      {% if profile.main_subject == 'math' %}selected{% endif %} data-i18n="opt_math">Matematika</option>
+            <option value="physics"   {% if profile.main_subject == 'physics' %}selected{% endif %} data-i18n="opt_physics">Fizika</option>
+            <option value="chemistry" {% if profile.main_subject == 'chemistry' %}selected{% endif %} data-i18n="opt_chemistry">Kimyo</option>
+            <option value="biology"   {% if profile.main_subject == 'biology' %}selected{% endif %} data-i18n="opt_biology">Biologiya</option>
+            <option value="history"   {% if profile.main_subject == 'history' %}selected{% endif %} data-i18n="opt_history">Tarix</option>
+            <option value="geography" {% if profile.main_subject == 'geography' %}selected{% endif %} data-i18n="opt_geography">Geografiya</option>
+            <option value="english"   {% if profile.main_subject == 'english' %}selected{% endif %} data-i18n="opt_english">Ingliz tili</option>
+            <option value="russian"   {% if profile.main_subject == 'russian' %}selected{% endif %} data-i18n="opt_russian">Rus tili</option>
+            <option value="lit"       {% if profile.main_subject == 'lit' %}selected{% endif %} data-i18n="opt_lit">Adabiyot</option>
+            <option value="cs"        {% if profile.main_subject == 'cs' %}selected{% endif %} data-i18n="opt_cs">Informatika</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="label_second_subject">Ikkinchi fan</label>
+          <select name="second_subject" class="form-control form-select">
+            <option value="" data-i18n="opt_select">— Tanlang —</option>
+            <option value="math"      {% if profile.second_subject == 'math' %}selected{% endif %} data-i18n="opt_math">Matematika</option>
+            <option value="physics"   {% if profile.second_subject == 'physics' %}selected{% endif %} data-i18n="opt_physics">Fizika</option>
+            <option value="chemistry" {% if profile.second_subject == 'chemistry' %}selected{% endif %} data-i18n="opt_chemistry">Kimyo</option>
+            <option value="biology"   {% if profile.second_subject == 'biology' %}selected{% endif %} data-i18n="opt_biology">Biologiya</option>
+            <option value="history"   {% if profile.second_subject == 'history' %}selected{% endif %} data-i18n="opt_history">Tarix</option>
+            <option value="geography" {% if profile.second_subject == 'geography' %}selected{% endif %} data-i18n="opt_geography">Geografiya</option>
+            <option value="english"   {% if profile.second_subject == 'english' %}selected{% endif %} data-i18n="opt_english">Ingliz tili</option>
+            <option value="russian"   {% if profile.second_subject == 'russian' %}selected{% endif %} data-i18n="opt_russian">Rus tili</option>
+            <option value="lit"       {% if profile.second_subject == 'lit' %}selected{% endif %} data-i18n="opt_lit">Adabiyot</option>
+            <option value="cs"        {% if profile.second_subject == 'cs' %}selected{% endif %} data-i18n="opt_cs">Informatika</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="label_degree">Daraja</label>
+          <select name="desired_degree" class="form-control form-select">
+            <option value="bachelor" {% if profile.desired_degree == 'bachelor' %}selected{% endif %} data-i18n="opt_bachelor">Bakalavr</option>
+            <option value="master"   {% if profile.desired_degree == 'master' %}selected{% endif %} data-i18n="opt_master">Magistr</option>
+            <option value="phd"      {% if profile.desired_degree == 'phd' %}selected{% endif %} data-i18n="opt_phd">PhD</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="label_study_type">O'qish turi</label>
+          <select name="study_type" class="form-control form-select">
+            <option value="local"  {% if profile.study_type == 'local' %}selected{% endif %} data-i18n="opt_local">Mahalliy</option>
+            <option value="abroad" {% if profile.study_type == 'abroad' %}selected{% endif %} data-i18n="opt_abroad">Xorijda</option>
+            <option value="both"   {% if profile.study_type == 'both' or not profile.study_type %}selected{% endif %} data-i18n="opt_both">Ikkalasi</option>
+            <option value="online" {% if profile.study_type == 'online' %}selected{% endif %} data-i18n="opt_online">Online</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {# ---- Moliya ---- #}
+    <div class="card mb-16">
+      <h2 class="section-title mb-16" data-i18n="profile_edit_finance">💰 Moliyaviy holat</h2>
+
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.875rem;">
+          <input type="checkbox" name="needs_grant" {% if profile.needs_grant %}checked{% endif %}
+            style="accent-color:var(--primary);width:18px;height:18px;">
+          <span data-i18n="profile_edit_grant">Grant kerak</span>
+        </label>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.875rem;">
+          <input type="checkbox" name="can_self_finance" {% if profile.can_self_finance %}checked{% endif %}
+            style="accent-color:var(--primary);width:18px;height:18px;">
+          <span data-i18n="profile_edit_self_finance">O'zi to'lay oladi</span>
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="profile_edit_budget">Oylik byudjet ($)</label>
+        <input type="number" name="monthly_budget" class="form-control" value="{{ profile.monthly_budget|default:'' }}" placeholder="500">
+      </div>
+    </div>
+
+    {# ---- Qo'shimcha ---- #}
+    <div class="card mb-20">
+      <h2 class="section-title mb-16" data-i18n="profile_edit_extra">⭐ Qo'shimcha ma'lumotlar</h2>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="profile_edit_vol_hours">Volontyor soati</label>
+        <input type="number" name="volunteer_hours" class="form-control" value="{{ profile.volunteer_hours|default:0 }}" min="0">
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.875rem;">
+          <input type="checkbox" name="has_work_experience" {% if profile.has_work_experience %}checked{% endif %}
+            style="accent-color:var(--primary);width:18px;height:18px;">
+          <span data-i18n="profile_edit_work_exp">Ish tajribasi bor</span>
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="profile_edit_work_desc">Ish tajribasi tavsifi</label>
+        <textarea name="work_experience_desc" class="form-control" rows="3" placeholder="Qayerda ishlaganingiz...">{{ profile.work_experience_desc }}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="profile_edit_achievements">Yutuqlar va sertifikatlar</label>
+        <textarea name="achievements" class="form-control" rows="3" placeholder="Olimpiada natijalari, sertifikatlar...">{{ profile.achievements }}</textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-full btn-lg">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+      <span data-i18n="profile_edit_save">Saqlash</span>
+    </button>
+
+  </form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewAvatar(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrap = document.querySelector('.profile-avatar-lg');
+      wrap.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}

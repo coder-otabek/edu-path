@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load dashboard_tags %}
+{% load static %}
+{% block title %}{{ essay.title }}{% endblock %}
+
+{% block content %}
+
+  {# Header #}
+  <div class="d-flex align-center gap-8 mb-16">
+    <a href="{% url 'dashboard:essays' %}" style="color:var(--text-muted);">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div style="flex:1;min-width:0;">
+      <h1 style="font-family:var(--font-display);font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        {{ essay.title }}
+      </h1>
+      <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap;">
+        <span class="badge badge-blue">{{ essay.get_essay_type_display }}</span>
+        <span style="font-size:.72rem;color:var(--text-muted);">{{ essay.word_count }} <span data-i18n="word">so'z</span></span>
+        <span style="font-size:.72rem;color:var(--text-muted);">{{ essay.created_at|date:"d.m.Y H:i" }}</span>
+      </div>
+    </div>
+  </div>
+
+  {# AI Ball — asosiy karta #}
+  {% if essay.ai_score is not None %}
+    <div class="welcome-card mb-16" style="
+      {% if essay.ai_score >= 80 %}background:linear-gradient(135deg,#059669,#10B981);
+      {% elif essay.ai_score >= 60 %}background:linear-gradient(135deg,#D97706,#F59E0B);
+      {% else %}background:linear-gradient(135deg,#DC2626,#EF4444);{% endif %}">
+      <p class="welcome-label" data-i18n="essay_ai_score">AI Baholash natijasi</p>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+        <div style="font-family:var(--font-display);font-size:3.5rem;font-weight:900;color:#fff;line-height:1;">
+          {{ essay.ai_score|floatformat:0 }}
+        </div>
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:#fff;">
+            {% if essay.ai_score >= 80 %}<span data-i18n="essay_score_excellent">Ajoyib! 🌟</span>
+            {% elif essay.ai_score >= 70 %}<span data-i18n="essay_score_good">Yaxshi 👍</span>
+            {% elif essay.ai_score >= 60 %}<span data-i18n="essay_score_average">O'rtacha 📝</span>
+            {% else %}<span data-i18n="essay_score_improve">Yaxshilash kerak 💪</span>{% endif %}
+          </div>
+          <div style="font-size:.8rem;opacity:.85;color:#fff;" data-i18n="essay_out_of">100 dan</div>
+        </div>
+      </div>
+
+      {# Progress bar #}
+      <div style="background:rgba(255,255,255,.2);border-radius:100px;height:8px;">
+        <div style="width:{{ essay.ai_score }}%;background:#fff;border-radius:100px;height:100%;transition:width 1s;"></div>
+      </div>
+
+      {% if essay.ai_feedback %}
+        <p style="font-size:.875rem;color:rgba(255,255,255,.9);margin-top:14px;line-height:1.6;">
+          {{ essay.ai_feedback }}
+        </p>
+      {% endif %}
+    </div>
+
+  {% elif essay.status == 'draft' %}
+    <div class="alert alert-info mb-16">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span data-i18n="essay_not_reviewed">AI hali baholamadi. Sahifani yangilang.</span>
+    </div>
+  {% endif %}
+
+  {# Kuchli tomonlar #}
+  {% if essay.ai_strengths %}
+    {% with strengths=essay.ai_strengths|parse_json %}
+      {% if strengths %}
+        <div class="card mb-12" style="border-left:3px solid var(--success);">
+          <div class="d-flex align-center gap-8 mb-10">
+            <span style="font-size:1.1rem;">💪</span>
+            <span style="font-weight:700;font-size:.9rem;color:var(--success);" data-i18n="essay_strengths">Kuchli tomonlar</span>
+          </div>
+          {% for s in strengths %}
+            <div style="display:flex;gap:8px;padding:6px 0;{% if not forloop.last %}border-bottom:1px solid var(--border);{% endif %}">
+              <span style="color:var(--success);flex-shrink:0;">✓</span>
+              <span style="font-size:.875rem;color:var(--text-secondary);">{{ s }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endif %}
+
+  {# Zaif tomonlar #}
+  {% if essay.ai_weaknesses %}
+    {% with weaknesses=essay.ai_weaknesses|parse_json %}
+      {% if weaknesses %}
+        <div class="card mb-12" style="border-left:3px solid var(--danger);">
+          <div class="d-flex align-center gap-8 mb-10">
+            <span style="font-size:1.1rem;">⚠️</span>
+            <span style="font-weight:700;font-size:.9rem;color:var(--danger);" data-i18n="essay_weaknesses">Zaif tomonlar</span>
+          </div>
+          {% for w in weaknesses %}
+            <div style="display:flex;gap:8px;padding:6px 0;{% if not forloop.last %}border-bottom:1px solid var(--border);{% endif %}">
+              <span style="color:var(--danger);flex-shrink:0;">!</span>
+              <span style="font-size:.875rem;color:var(--text-secondary);">{{ w }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endif %}
+
+  {# Tavsiyalar #}
+  {% if essay.ai_suggestions %}
+    {% with suggestions=essay.ai_suggestions|parse_json %}
+      {% if suggestions %}
+        <div class="card mb-16" style="border-left:3px solid var(--accent);">
+          <div class="d-flex align-center gap-8 mb-10">
+            <span style="font-size:1.1rem;">💡</span>
+            <span style="font-weight:700;font-size:.9rem;color:var(--accent);" data-i18n="essay_suggestions">AI Tavsiyalar</span>
+          </div>
+          {% for suggestion in suggestions %}
+            <div style="display:flex;gap:10px;padding:8px 0;{% if not forloop.last %}border-bottom:1px solid var(--border);{% endif %}">
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;">{{ forloop.counter }}</span>
+              <span style="font-size:.875rem;color:var(--text-secondary);line-height:1.55;">{{ suggestion }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endif %}
+
+  {# Essay matni #}
+  <div class="card mb-16">
+    <div class="d-flex align-center justify-between mb-12">
+      <span style="font-weight:700;font-size:.9rem;" data-i18n="essay_text">📄 Essay matni</span>
+      <span style="font-size:.75rem;color:var(--text-muted);">{{ essay.word_count }} <span data-i18n="word">so'z</span></span>
+    </div>
+    <div style="font-size:.875rem;line-height:1.8;color:var(--text-secondary);white-space:pre-wrap;max-height:300px;overflow-y:auto;">{{ essay.content }}</div>
+  </div>
+
+  {# Harakatlar #}
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <a href="{% url 'dashboard:essay_write' %}?id={{ essay.pk }}" class="btn btn-outline" style="flex:1;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+      </svg>
+      Tahrirlash
+    </a>
+    <form method="post" action="{% url 'dashboard:essay_delete' essay.pk %}" style="flex:1;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-full" style="background:#FEE2E2;color:var(--danger);"
+        onclick="return confirm('Essayni o\'chirasizmi?')">
+        🗑️ O'chirish
+      </button>
+    </form>
+  </div>
+
+{% endblock %}

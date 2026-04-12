@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ grant.name }} — {{ university.name }}{% endblock %}
+
+{% block content %}
+<div class="page-grant-detail">
+
+  {# ── Breadcrumb ── #}
+  <nav class="breadcrumb">
+    <a href="{% url 'universities:list' %}" data-i18n="grant_breadcrumb_unis">Universitetlar</a>
+    <span>›</span>
+    <a href="{{ university.get_absolute_url }}">{{ university.name }}</a>
+    <span>›</span>
+    <span>{{ grant.name }}</span>
+  </nav>
+
+  {# ── Grant Hero ── #}
+  <div class="grant-hero">
+    <div class="grant-hero__icon grant-hero__icon--{{ grant.grant_type }}">
+      {% if grant.grant_type == 'foreign' %}✈️{% elif grant.grant_type == 'local' %}🏛️{% else %}🎓{% endif %}
+    </div>
+    <div class="grant-hero__info">
+      <span class="grant-hero__badge grant-hero__badge--{{ grant.grant_type }}">
+        {% if grant.grant_type == 'foreign' %}<span data-i18n="grant_type_foreign">Xorijiy grant</span>{% elif grant.grant_type == 'local' %}<span data-i18n="grant_type_local">Mahalliy grant</span>{% else %}<span data-i18n="grant_type_both">Xorijiy va Mahalliy</span>{% endif %}
+      </span>
+      <h1 class="grant-hero__name">{{ grant.name }}</h1>
+      <p class="grant-hero__uni">
+        🎓 {{ university.name }}
+        {% if university.city %} · 📍 {{ university.city }}{% endif %}
+      </p>
+    </div>
+    {% if grant.apply_url %}
+      <a href="{{ grant.apply_url }}" target="_blank" rel="noopener" class="btn btn--apply">
+        <span data-i18n="grant_detail_apply">📝 Ariza topshirish</span>
+      </a>
+    {% endif %}
+  </div>
+
+  {# ── Asosiy ma'lumotlar ── #}
+  <div class="grant-info-grid">
+    {% if grant.amount %}
+      <div class="grant-info-card">
+        <span class="grant-info-card__icon">💰</span>
+        <div>
+          <div class="grant-info-card__label" data-i18n="grant_detail_amount">Miqdori</div>
+          <div class="grant-info-card__val">{{ grant.amount }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="grant-info-card">
+      <span class="grant-info-card__icon">📚</span>
+      <div>
+        <div class="grant-info-card__label" data-i18n="grant_detail_degree">Daraja</div>
+        <div class="grant-info-card__val">
+          {% if grant.degree == 'bachelor' or not grant.degree %}
+            <span data-i18n="degree_bachelor">Bakalavr</span>
+          {% elif grant.degree == 'master' %}
+            <span data-i18n="degree_master">Magistr</span>
+          {% elif grant.degree == 'phd' %}
+            <span data-i18n="degree_phd">PhD</span>
+          {% else %}
+            <span data-i18n="degree_all">Barcha darajalar</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if grant.deadline %}
+      <div class="grant-info-card grant-info-card--warn">
+        <span class="grant-info-card__icon">📅</span>
+        <div>
+          <div class="grant-info-card__label" data-i18n="grant_detail_deadline">Ariza muddati</div>
+          <div class="grant-info-card__val">{{ grant.deadline|date:"d.m.Y" }}</div>
+        </div>
+      </div>
+    {% elif grant.deadline_text %}
+      <div class="grant-info-card grant-info-card--warn">
+        <span class="grant-info-card__icon">📅</span>
+        <div>
+          <div class="grant-info-card__label" data-i18n="grant_detail_deadline">Ariza muddati</div>
+          <div class="grant-info-card__val">{{ grant.deadline_text }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if grant.min_ielts %}
+      <div class="grant-info-card">
+        <span class="grant-info-card__icon">🗣</span>
+        <div>
+          <div class="grant-info-card__label" data-i18n="grant_detail_min_ielts">Min IELTS</div>
+          <div class="grant-info-card__val">{{ grant.min_ielts }}+</div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if grant.min_gpa %}
+      <div class="grant-info-card">
+        <span class="grant-info-card__icon">📊</span>
+        <div>
+          <div class="grant-info-card__label" data-i18n="grant_detail_min_gpa">Min GPA</div>
+          <div class="grant-info-card__val">{{ grant.min_gpa }}+</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Tavsif ── #}
+  {% if grant.description %}
+    <div class="grant-section-card">
+      <h2 class="grant-section-card__title" data-i18n="grant_detail_about">📄 Grant haqida</h2>
+      <p class="grant-section-card__text">{{ grant.description }}</p>
+    </div>
+  {% endif %}
+
+  {# ── Talablar ── #}
+  {% if grant.requirements %}
+    <div class="grant-section-card">
+      <h2 class="grant-section-card__title" data-i18n="grant_detail_requirements">✅ Talablar</h2>
+      <div class="grant-requirements">
+        {% for line in grant.requirements.splitlines %}
+          {% if line.strip %}
+            <div class="grant-req-item">
+              <span class="grant-req-item__dot">●</span>
+              <span>{{ line }}</span>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ── Video qo'llanmalar ── #}
+  {% if videos %}
+    <div class="grant-videos-section">
+      <h2 class="grant-videos-section__title" data-i18n="grant_detail_videos_title">🎬 Video qo'llanmalar</h2>
+      <p class="grant-videos-section__sub" data-i18n="grant_detail_videos_sub">
+        Ushbu grantni qanday olish haqida bosqichma-bosqich qo'llanmalar
+      </p>
+
+      <div class="videos-list">
+        {% for video in videos %}
+          <div class="video-item" id="video-{{ video.id }}">
+            <div class="video-item__player">
+              {% if video.youtube_url %}
+                <div class="video-embed-wrap" data-embed="{{ video.youtube_embed_url }}">
+                  <div class="video-thumbnail" onclick="loadVideo(this)">
+                    {% if video.thumbnail %}
+                      <img src="{{ video.thumbnail.url }}" alt="{{ video.title }}" class="video-thumb-img">
+                    {% else %}
+                      <div class="video-thumb-placeholder">▶</div>
+                    {% endif %}
+                    <div class="video-thumb-play">
+                      <div class="video-thumb-play__btn">▶</div>
+                    </div>
+                    {% if video.duration %}
+                      <span class="video-thumb-duration">{{ video.duration }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+              {% elif video.video_file %}
+                <video
+                  class="video-native"
+                  controls
+                  preload="metadata"
+                  poster="{% if video.thumbnail %}{{ video.thumbnail.url }}{% endif %}"
+                >
+                  <source src="{{ video.video_file.url }}">
+                  <span data-i18n="grant_video_browser_unsupported">Brauzeringiz videoni qo'llab-quvvatlamaydi.</span>
+                </video>
+              {% else %}
+                <div class="video-no-source" data-i18n="grant_detail_no_video_src">📹 Video hali qo'shilmagan</div>
+              {% endif %}
+            </div>
+
+            <div class="video-item__info">
+              <div class="video-item__num">{{ forloop.counter }}</div>
+              <div>
+                <h3 class="video-item__title">{{ video.title }}</h3>
+                {% if video.description %}
+                  <p class="video-item__desc">{{ video.description }}</p>
+                {% endif %}
+                {% if video.duration %}
+                  <span class="video-item__duration">⏱ {{ video.duration }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="grant-no-videos">
+      <span>📹</span>
+      <p data-i18n="grant_detail_no_videos_text">Bu grant uchun video qo'llanmalar hali qo'shilmagan</p>
+    </div>
+  {% endif %}
+
+  {# ── Pastki harakatlar ── #}
+  <div class="grant-footer-actions">
+    <a href="{{ university.get_absolute_url }}" class="btn btn--ghost">
+      <span data-i18n="grant_detail_back">← Universitetga qaytish</span>
+    </a>
+    <div class="grant-footer-actions__right">
+      <a href="{% url 'ai_engine:chat' %}?q={{ grant.name|urlencode }}+{{ university.name|urlencode }}"
+         class="btn btn--ai">
+        <span data-i18n="grant_detail_ask_ai">🤖 AI dan so'rash</span>
+      </a>
+      {% if grant.apply_url %}
+        <a href="{{ grant.apply_url }}" target="_blank" rel="noopener" class="btn btn--apply">
+          <span data-i18n="grant_detail_apply">📝 Ariza topshirish</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+.page-grant-detail {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: .85rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Hero — tuzatildi: flex-wrap + align-items:center */
+.grant-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.grant-hero__icon {
+  width: 56px; height: 56px; flex-shrink: 0;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+}
+.grant-hero__icon--foreign { background: rgba(59,130,246,.12); }
+.grant-hero__icon--local   { background: rgba(16,185,129,.12); }
+.grant-hero__info { flex: 1; min-width: 0; }
+.grant-hero__badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .78rem; font-weight: 600;
+  margin-bottom: 6px;
+}
+.grant-hero__badge--foreign { background: rgba(59,130,246,.12); color: #3b82f6; }
+.grant-hero__badge--local   { background: rgba(16,185,129,.12); color: #10b981; }
+.grant-hero__name {
+  font-size: 1.4rem; font-weight: 700;
+  margin: 0 0 4px; color: var(--text-primary);
+  word-break: break-word;
+}
+.grant-hero__uni { font-size: .88rem; color: var(--text-muted); margin: 0; }
+
+.btn--apply {
+  background: #10b981; color: #fff;
+  padding: 10px 18px; border-radius: 10px;
+  text-decoration: none; font-size: .88rem; font-weight: 600;
+  white-space: nowrap; transition: opacity .2s;
+  flex-shrink: 0; display: inline-block;
+}
+.btn--apply:hover { opacity: .88; color: #fff; }
+
+/* Info grid */
+.grant-info-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.grant-info-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 16px;
+  flex: 1;
+  min-width: 120px;
+}
+.grant-info-card--warn { border-color: #f59e0b; background: rgba(245,158,11,.05); }
+.grant-info-card__icon { font-size: 1.3rem; flex-shrink: 0; }
+.grant-info-card__label { font-size: .72rem; color: var(--text-muted); margin-bottom: 2px; }
+.grant-info-card__val   { font-size: .95rem; font-weight: 600; color: var(--text-primary); }
+
+/* Section cards */
+.grant-section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.grant-section-card__title {
+  font-size: .95rem; font-weight: 700;
+  margin: 0 0 10px; color: var(--text-primary);
+}
+.grant-section-card__text {
+  color: var(--text-secondary);
+  line-height: 1.65; font-size: .92rem; margin: 0;
+}
+
+/* Requirements */
+.grant-requirements { display: flex; flex-direction: column; gap: 8px; }
+.grant-req-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: .88rem; color: var(--text-secondary); line-height: 1.5;
+}
+.grant-req-item__dot { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+
+/* Videos */
+.grant-videos-section { margin-bottom: 24px; }
+.grant-videos-section__title {
+  font-size: 1.1rem; font-weight: 700;
+  margin: 0 0 4px; color: var(--text-primary);
+}
+.grant-videos-section__sub {
+  font-size: .83rem; color: var(--text-muted); margin: 0 0 14px;
+}
+.videos-list { display: flex; flex-direction: column; gap: 14px; }
+.video-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px; overflow: hidden;
+}
+.video-item__player { width: 100%; }
+.video-embed-wrap { width: 100%; }
+.video-thumbnail {
+  position: relative; width: 100%; padding-top: 56.25%;
+  cursor: pointer; background: #000; overflow: hidden;
+}
+.video-thumb-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover; transition: opacity .3s;
+}
+.video-thumbnail:hover .video-thumb-img { opacity: .8; }
+.video-thumb-placeholder {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  font-size: 3rem; color: rgba(255,255,255,.4);
+}
+.video-thumb-play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.video-thumb-play__btn {
+  width: 60px; height: 60px;
+  background: rgba(255,255,255,.9); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #1e1b4b;
+  box-shadow: 0 4px 20px rgba(0,0,0,.3); transition: transform .2s;
+}
+.video-thumbnail:hover .video-thumb-play__btn { transform: scale(1.1); }
+.video-thumb-duration {
+  position: absolute; bottom: 8px; right: 10px;
+  background: rgba(0,0,0,.75); color: #fff;
+  font-size: .72rem; font-weight: 600;
+  padding: 2px 6px; border-radius: 4px;
+}
+.video-embed-wrap iframe {
+  width: 100%; aspect-ratio: 16/9; border: none; display: block;
+}
+.video-native {
+  width: 100%; display: block; background: #000; max-height: 380px;
+}
+.video-no-source {
+  padding: 36px; text-align: center;
+  color: var(--text-muted); font-size: .92rem;
+}
+.video-item__info {
+  display: flex; align-items: flex-start;
+  gap: 12px; padding: 12px 14px;
+}
+.video-item__num {
+  width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent);
+  font-size: .8rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.video-item__title {
+  font-size: .92rem; font-weight: 600;
+  margin: 0 0 3px; color: var(--text-primary);
+}
+.video-item__desc {
+  font-size: .82rem; color: var(--text-secondary);
+  line-height: 1.5; margin: 0 0 4px;
+}
+.video-item__duration { font-size: .76rem; color: var(--text-muted); }
+
+/* No videos */
+.grant-no-videos {
+  text-align: center; padding: 36px 20px;
+  color: var(--text-muted); font-size: .92rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 14px; margin-bottom: 20px;
+}
+.grant-no-videos span { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+
+/* Footer */
+.grant-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px; flex-wrap: wrap;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-color);
+}
+.grant-footer-actions__right { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn--ghost {
+  padding: 9px 16px; border-radius: 10px;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-secondary); text-decoration: none;
+  font-size: .88rem; font-weight: 500;
+  transition: all .2s; display: inline-block;
+}
+.btn--ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn--ai {
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: #fff; padding: 9px 18px; border-radius: 10px;
+  text-decoration: none; font-size: .88rem; font-weight: 600;
+  white-space: nowrap; transition: opacity .2s; display: inline-block;
+}
+.btn--ai:hover { opacity: .88; color: #fff; }
+
+@media (max-width: 600px) {
+  .grant-hero { flex-direction: column; align-items: flex-start; }
+  .grant-info-grid { flex-direction: column; }
+  .grant-info-card { min-width: unset; }
+  .grant-footer-actions { flex-direction: column; align-items: stretch; }
+  .grant-footer-actions__right { flex-direction: column; }
+  .btn--apply, .btn--ai, .btn--ghost {
+    text-align: center; width: 100%; box-sizing: border-box;
+  }
+}
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+function loadVideo(thumbEl) {
+  const wrap  = thumbEl.closest('.video-embed-wrap');
+  const embed = wrap.dataset.embed;
+  if (!embed) return;
+  const iframe = document.createElement('iframe');
+  iframe.src             = embed + '?autoplay=1&rel=0';
+  iframe.allow           = 'autoplay; encrypted-media; picture-in-picture';
+  iframe.allowFullscreen = true;
+  iframe.loading         = 'lazy';
+  thumbEl.replaceWith(iframe);
+}
+</script>
+{% endblock %}

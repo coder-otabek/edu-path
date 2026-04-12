@@ -1,0 +1,408 @@
+"""universities/models.py"""
+from django.db import models
+from django.utils.text import slugify
+import uuid
+
+
+# ─── Choices ────────────────────────────────────────────────
+GRANT_TYPE_CHOICES = [
+    ('foreign', 'Xorijiy grant'),
+    ('local',   'Mahalliy grant'),
+    ('both',    'Ikkalasi ham'),
+]
+
+COUNTRY_CHOICES = [
+    ('uz', "O'zbekiston"),
+    ('us', 'AQSh'),
+    ('uk', 'Buyuk Britaniya'),
+    ('de', 'Germaniya'),
+    ('kr', 'Janubiy Koreya'),
+    ('cn', 'Xitoy'),
+    ('ru', 'Rossiya'),
+    ('fr', 'Fransiya'),
+    ('jp', 'Yaponiya'),
+    ('ae', 'BAA'),
+    ('tr', 'Turkiya'),
+    ('ca', 'Kanada'),
+    ('au', 'Avstraliya'),
+    ('other', 'Boshqa'),
+]
+
+DEGREE_CHOICES = [
+    ('bachelor', 'Bakalavr'),
+    ('master',   'Magistr'),
+    ('phd',      'Doktorantura'),
+    ('all',      'Barcha darajalar'),
+]
+
+
+# ─── Mutaxassislik ──────────────────────────────────────────
+class Specialty(models.Model):
+    name = models.CharField("Mutaxassislik nomi", max_length=255)
+
+    class Meta:
+        verbose_name        = "Mutaxassislik"
+        verbose_name_plural = "Mutaxassisliklar"
+        ordering            = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+# ─── Universitet ─────────────────────────────────────────────
+class University(models.Model):
+    name        = models.CharField("Universitet nomi", max_length=255)
+    slug        = models.SlugField(max_length=255, unique=True, blank=True)
+    logo        = models.ImageField("Logotip", upload_to="universities/logos/", blank=True, null=True)
+    cover_image = models.ImageField("Muqova rasm", upload_to="universities/covers/", blank=True, null=True)
+    country     = models.CharField("Mamlakat", max_length=10, choices=COUNTRY_CHOICES, default='uz')
+    city        = models.CharField("Shahar", max_length=100, blank=True)
+    grant_type  = models.CharField("Grant turi", max_length=10, choices=GRANT_TYPE_CHOICES, default='foreign')
+
+    website     = models.URLField("Rasmiy sayt", blank=True)
+    description = models.TextField("Tavsif", blank=True)
+    ai_summary  = models.TextField("AI xulosasi", blank=True)
+
+    min_ielts_score  = models.FloatField("Min IELTS", null=True, blank=True)
+    min_sat_score    = models.PositiveIntegerField("Min SAT", null=True, blank=True)
+    min_gpa          = models.FloatField("Min GPA", null=True, blank=True)
+    tuition_fee_min  = models.PositiveIntegerField("Min to'lov ($/yil)", null=True, blank=True)
+    tuition_fee_max  = models.PositiveIntegerField("Max to'lov ($/yil)", null=True, blank=True)
+    has_grant        = models.BooleanField("Grant mavjud", default=True)
+    specialties      = models.ManyToManyField(Specialty, blank=True, verbose_name="Yo'nalishlar")
+    is_published     = models.BooleanField("E'lon qilingan", default=True)
+    created_at       = models.DateTimeField(auto_now_add=True)
+    updated_at       = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name        = "Universitet"
+        verbose_name_plural = "Universitetlar"
+        ordering            = ['name']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name)
+            slug = base
+            n    = 1
+            while University.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{n}"
+                n   += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('universities:detail', kwargs={'slug': self.slug})
+
+
+# ─── Universitet Grant ───────────────────────────────────────
+class Grant(models.Model):
+    university    = models.ForeignKey(
+        University, on_delete=models.CASCADE,
+        related_name='grants', verbose_name="Universitet"
+    )
+    name          = models.CharField("Grant nomi", max_length=255)
+    slug          = models.SlugField(max_length=255, blank=True)
+    grant_type    = models.CharField("Grant turi", max_length=10, choices=GRANT_TYPE_CHOICES, default='foreign')
+    degree        = models.CharField("Daraja", max_length=20, choices=DEGREE_CHOICES, default='bachelor')
+    description   = models.TextField("Tavsif", blank=True)
+    amount        = models.CharField("Miqdor", max_length=100, blank=True,
+                                     help_text="Masalan: To'liq, 50%, $5000/yil")
+    deadline      = models.DateField("Ariza topshirish muddati", null=True, blank=True)
+    deadline_text = models.CharField("Muddat matni", max_length=100, blank=True,
+                                     help_text="Masalan: Har yili May oxiri")
+    min_ielts     = models.FloatField("Min IELTS", null=True, blank=True)
+    min_gpa       = models.FloatField("Min GPA", null=True, blank=True)
+    requirements  = models.TextField("Qo'shimcha talablar", blank=True)
+    apply_url     = models.URLField("Ariza sahifasi", blank=True)
+    is_active     = models.BooleanField("Faol", default=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Grant (Universitet)"
+        verbose_name_plural = "Grantlar (Universitet)"
+        ordering            = ['name']
+
+    def __str__(self):
+        return f"{self.university.name} — {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name) or str(uuid.uuid4())[:8]
+            slug = base
+            n    = 1
+            while Grant.objects.filter(slug=slug, university=self.university).exclude(pk=self.pk).exists():
+                slug = f"{base}-{n}"
+                n   += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('universities:grant_detail',
+                       kwargs={'uni_slug': self.university.slug, 'grant_id': self.pk})
+
+
+# ─── Grant Video (Universitet granti uchun) ──────────────────
+def grant_video_upload_path(instance, filename):
+    return f"universities/grant_videos/{instance.grant.id}/{filename}"
+
+
+class GrantVideo(models.Model):
+    grant        = models.ForeignKey(
+        Grant, on_delete=models.CASCADE,
+        related_name='videos', verbose_name="Grant"
+    )
+    title        = models.CharField("Sarlavha", max_length=255)
+    description  = models.TextField("Tavsif", blank=True)
+    order        = models.PositiveSmallIntegerField("Tartib", default=0)
+    video_file   = models.FileField("Video fayl", upload_to=grant_video_upload_path, blank=True, null=True)
+    youtube_url  = models.URLField("YouTube havolasi", blank=True,
+                                   help_text="https://youtube.com/watch?v=... yoki https://youtu.be/...")
+    duration     = models.CharField("Davomiyligi", max_length=20, blank=True)
+    thumbnail    = models.ImageField("Muqova rasm", upload_to="universities/video_thumbs/", blank=True, null=True)
+    is_published = models.BooleanField("E'lon qilingan", default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Grant Video"
+        verbose_name_plural = "Grant Videolar"
+        ordering            = ['grant', 'order']
+
+    def __str__(self):
+        return f"{self.grant.name} — {self.title}"
+
+    @property
+    def youtube_embed_url(self):
+        if not self.youtube_url:
+            return ""
+        url = self.youtube_url.strip()
+        if "youtu.be/" in url:
+            vid = url.split("youtu.be/")[-1].split("?")[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        if "watch?v=" in url:
+            vid = url.split("watch?v=")[-1].split("&")[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        if "youtube.com/embed/" in url:
+            return url
+        return url
+
+    @property
+    def has_video(self):
+        return bool(self.video_file or self.youtube_url)
+
+
+# ─── Mustaqil Grant (universitetga bog'liq emas) ─────────────
+class StandaloneGrant(models.Model):
+    """
+    Universitetga bog'liq bo'lmagan grantlar.
+    Ixtiyoriy ravishda bir yoki bir nechta universitetga bog'lash mumkin.
+    """
+    name          = models.CharField("Grant nomi", max_length=255)
+    slug          = models.SlugField(max_length=255, unique=True, blank=True)
+    cover_image   = models.ImageField("Muqova rasm", upload_to="grants/covers/", blank=True, null=True)
+    logo          = models.ImageField("Logotip / Bayroq", upload_to="grants/logos/", blank=True, null=True)
+
+    grant_type    = models.CharField("Grant turi", max_length=10, choices=GRANT_TYPE_CHOICES, default='foreign')
+    country       = models.CharField("Mamlakat", max_length=10, choices=COUNTRY_CHOICES, default='uz')
+    degree        = models.CharField("Daraja", max_length=20, choices=DEGREE_CHOICES, default='all')
+
+    # Asosiy ma'lumotlar
+    description   = models.TextField("Tavsif", blank=True)
+    founded_year  = models.PositiveIntegerField("Tashkil etilgan yil", null=True, blank=True)
+    directions    = models.TextField("Yo'nalishlar", blank=True,
+                                     help_text="Har bir yo'nalishni yangi qatordan yozing")
+    requirements  = models.TextField("Talablar", blank=True,
+                                     help_text="Har bir talabni yangi qatordan yozing")
+    winners_count = models.CharField("G'oliblar soni", max_length=100, blank=True,
+                                     help_text="Masalan: Har yil 10-30 nafar")
+
+    # Mukofot
+    amount        = models.CharField("Mukofot miqdori", max_length=255, blank=True,
+                                     help_text="Masalan: To'liq grant yoki Oyiga 900,000 KRW")
+    deadline      = models.DateField("Ariza muddati", null=True, blank=True)
+    deadline_text = models.CharField("Muddat matni", max_length=100, blank=True,
+                                     help_text="Masalan: Har yili bahor-yoz")
+
+    # IELTS / GPA talablari
+    min_ielts     = models.FloatField("Min IELTS", null=True, blank=True)
+    min_gpa       = models.FloatField("Min GPA", null=True, blank=True)
+
+    # Ixtiyoriy universitet bog'lash (ko'p-ko'p)
+    universities  = models.ManyToManyField(
+        University, blank=True,
+        related_name='standalone_grants',
+        verbose_name="Universitetlar (ixtiyoriy)",
+        help_text="Bo'sh qoldirilsa — umumiy grantlar ro'yxatida ko'rinadi"
+    )
+
+    apply_url     = models.URLField("Ariza sahifasi", blank=True)
+    official_site = models.URLField("Rasmiy sayt", blank=True)
+    is_active     = models.BooleanField("Faol", default=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+    updated_at    = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name        = "Mustaqil Grant"
+        verbose_name_plural = "Mustaqil Grantlar"
+        ordering            = ['grant_type', 'name']
+
+    def __str__(self):
+        return f"{self.get_grant_type_display()} — {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name) or str(uuid.uuid4())[:8]
+            slug = base
+            n    = 1
+            while StandaloneGrant.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{n}"
+                n   += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('universities:standalone_grant_detail', kwargs={'slug': self.slug})
+
+    @property
+    def directions_list(self):
+        return [d.strip() for d in self.directions.splitlines() if d.strip()]
+
+    @property
+    def requirements_list(self):
+        return [r.strip() for r in self.requirements.splitlines() if r.strip()]
+
+
+# ─── Mustaqil Grant Video ─────────────────────────────────────
+def standalone_grant_video_path(instance, filename):
+    return f"grants/videos/{instance.grant.id}/{filename}"
+
+
+class StandaloneGrantVideo(models.Model):
+    grant        = models.ForeignKey(
+        StandaloneGrant, on_delete=models.CASCADE,
+        related_name='videos', verbose_name="Grant"
+    )
+    title        = models.CharField("Sarlavha", max_length=255)
+    description  = models.TextField("Tavsif", blank=True)
+    order        = models.PositiveSmallIntegerField("Tartib", default=0)
+    video_file   = models.FileField("Video fayl", upload_to=standalone_grant_video_path, blank=True, null=True)
+    youtube_url  = models.URLField("YouTube havolasi", blank=True)
+    duration     = models.CharField("Davomiyligi", max_length=20, blank=True)
+    thumbnail    = models.ImageField("Muqova rasm", upload_to="grants/video_thumbs/", blank=True, null=True)
+    is_published = models.BooleanField("E'lon qilingan", default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Mustaqil Grant Video"
+        verbose_name_plural = "Mustaqil Grant Videolar"
+        ordering            = ['grant', 'order']
+
+    def __str__(self):
+        return f"{self.grant.name} — {self.title}"
+
+    @property
+    def youtube_embed_url(self):
+        if not self.youtube_url:
+            return ""
+        url = self.youtube_url.strip()
+        if "youtu.be/" in url:
+            vid = url.split("youtu.be/")[-1].split("?")[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        if "watch?v=" in url:
+            vid = url.split("watch?v=")[-1].split("&")[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        if "youtube.com/embed/" in url:
+            return url
+        return url
+
+    @property
+    def has_video(self):
+        return bool(self.video_file or self.youtube_url)
+
+
+# ─── Universitet Content (AI uchun) ─────────────────────────
+class UniversityContent(models.Model):
+    CONTENT_TYPE_CHOICES = [
+        ('pdf',   'PDF hujjat'),
+        ('docx',  'Word hujjat'),
+        ('image', 'Rasm'),
+        ('text',  'Matn'),
+        ('audio', 'Audio'),
+        ('video', 'Video'),
+    ]
+
+    university   = models.ForeignKey(
+        University, on_delete=models.CASCADE,
+        related_name='contents', verbose_name="Universitet"
+    )
+    title        = models.CharField("Sarlavha", max_length=255)
+    content_type = models.CharField("Tur", max_length=10, choices=CONTENT_TYPE_CHOICES)
+    file         = models.FileField("Fayl", upload_to="universities/content/", blank=True, null=True)
+    text_content = models.TextField("Matn", blank=True)
+    ai_extracted = models.TextField("AI ajratgan matn", blank=True)
+    ai_summary   = models.TextField("AI xulosasi", blank=True)
+    ai_processed = models.BooleanField("AI qayta ishladi", default=False)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Universitet Kontent"
+        verbose_name_plural = "Universitet Kontentlar"
+
+    def __str__(self):
+        return f"{self.university.name} — {self.title}"
+
+
+# ─── Essay Namunasi ──────────────────────────────────────────
+ESSAY_TYPE_CHOICES = [
+    ('why_us',          "Nega bu universitet?"),
+    ('personal_stmt',   "Shaxsiy bayonot"),
+    ('motivation',      "Motivatsiya xati"),
+    ('scholarship',     "Grant uchun esse"),
+    ('extracurricular', "Qo'shimcha faoliyat"),
+    ('challenge',       "Hayotiy qiyinchilik"),
+    ('achievement',     "Yutuq haqida"),
+    ('general',         "Umumiy esse"),
+]
+
+ESSAY_SCORE_CHOICES = [
+    (5, "⭐⭐⭐⭐⭐ A'lo (namuna)"),
+    (4, "⭐⭐⭐⭐ Yaxshi"),
+    (3, "⭐⭐⭐ O'rtacha"),
+]
+
+
+class EssaySample(models.Model):
+    title       = models.CharField("Sarlavha", max_length=255)
+    essay_type  = models.CharField("Esse turi", max_length=30, choices=ESSAY_TYPE_CHOICES, default='general')
+    university  = models.ForeignKey(
+        University, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='essay_samples',
+        verbose_name="Universitet (ixtiyoriy)"
+    )
+    content     = models.TextField("Esse matni")
+    score       = models.PositiveSmallIntegerField("Namuna sifati", choices=ESSAY_SCORE_CHOICES, default=5)
+    structure_notes = models.TextField("Struktura izohi", blank=True)
+    word_count  = models.PositiveIntegerField("So'z soni", default=0)
+    language    = models.CharField("Til", max_length=5,
+                                   choices=[('en', 'Ingliz'), ('uz', "O'zbek"), ('ru', 'Rus')],
+                                   default='en')
+    is_active   = models.BooleanField("Faol (AI uchun ishlatiladi)", default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Esse Namunasi"
+        verbose_name_plural = "Esse Namunalari"
+        ordering            = ['-score', 'essay_type']
+
+    def __str__(self):
+        return f"[{self.get_essay_type_display()}] {self.title} ({self.score}⭐)"
+
+    def save(self, *args, **kwargs):
+        if self.content:
+            self.word_count = len(self.content.split())
+        super().save(*args, **kwargs)

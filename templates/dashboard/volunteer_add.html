@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Faoliyat qo'shish{% endblock %}
+
+{% block content %}
+
+  <div class="d-flex align-center gap-8 mb-20">
+    <a href="{% url 'dashboard:volunteer' %}" style="color:var(--text-muted);">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <h1 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;" data-i18n="vol_add_title">Yangi faoliyat</h1>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-error mb-16">{{ error }}</div>
+  {% endif %}
+
+  <div class="card mb-16" style="border-left:3px solid var(--accent);padding:14px 16px;">
+    <div class="d-flex align-center gap-8">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--accent)" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+      </svg>
+      <p style="font-size:.825rem;color:var(--text-secondary);margin:0;">
+        <span data-i18n="vol_ai_hint">Saqlashdan keyin AI avtomatik CV uchun inglizcha matn yozib beradi!</span>
+      </p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="card mb-16">
+      <h2 class="section-title mb-16" data-i18n="vol_basic_info">📋 Asosiy ma'lumotlar</h2>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="vol_org">Tashkilot nomi <span>*</span></label>
+        <input type="text" name="organization" class="form-control"
+          value="{{ post.organization|default:'' }}"
+          placeholder="Masalan: UNICEF Uzbekistan, Mahalla jamg'armasi...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="vol_role">Vazifangiz / Rolingiz <span>*</span></label>
+        <input type="text" name="role" class="form-control"
+          value="{{ post.role|default:'' }}"
+          placeholder="Masalan: O'qituvchi yordamchisi, Tarjimon, Koordinator...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="vol_desc">Tavsif</label>
+        <textarea name="description" class="form-control" rows="3"
+          placeholder="Nima qildingiz? Qanday natijalar qo'lga kiritdingiz?">{{ post.description|default:'' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="vol_hours">Jami soat <span>*</span></label>
+        <input type="number" name="hours" class="form-control"
+          value="{{ post.hours|default:'' }}"
+          placeholder="40" min="1" max="10000">
+      </div>
+    </div>
+
+    <div class="card mb-16">
+      <h2 class="section-title mb-16" data-i18n="vol_date_section">📅 Sana</h2>
+
+      <div style="display:flex;gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="vol_start">Boshlangan sana <span>*</span></label>
+          <input type="date" name="start_date" class="form-control"
+            value="{{ post.start_date|default:'' }}">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label" data-i18n="vol_end">Tugagan sana</label>
+          <input type="date" name="end_date" class="form-control"
+            value="{{ post.end_date|default:'' }}"
+            id="endDateInput">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.875rem;">
+          <input type="checkbox" name="is_ongoing" id="isOngoing"
+            {% if post.is_ongoing %}checked{% endif %}
+            style="accent-color:var(--primary);width:18px;height:18px;"
+            onchange="document.getElementById('endDateInput').disabled = this.checked">
+          <span data-i18n="vol_ongoing">Hozir ham davom etmoqda</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card mb-20">
+      <h2 class="section-title mb-16" data-i18n="vol_cert_section">📎 Sertifikat (ixtiyoriy)</h2>
+      <div class="form-group">
+        <label class="form-label"><span data-i18n="vol_cert_label">Sertifikat fayli (PDF, rasm)</span></label>
+        <input type="file" name="certificate" class="form-control"
+          accept=".pdf,.jpg,.jpeg,.png" style="padding:8px;">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-full btn-lg" id="saveBtn">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+      </svg>
+      Saqlash va AI CV yozsin
+    </button>
+
+  </form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> AI CV matni yozilyapti...';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="uz" id="htmlRoot">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2563EB">
+  <title>EduPath</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563EB; --primary-light: #DBEAFE;
+      --surface: #fff; --bg: #F8FAFF; --border: #E2E8F0;
+      --text: #0F172A; --muted: #64748B; --radius: 16px;
+    }
+    [data-theme="dark"] {
+      --primary-light: #1e3a5f; --surface: #1E293B;
+      --bg: #0F172A; --border: #334155; --text: #F1F5F9; --muted: #94A3B8;
+    }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; transition: background .3s, color .3s;
+    }
+    .wrap { width: 100%; max-width: 420px; }
+
+    /* Steps */
+    .steps { display: flex; gap: 8px; margin-bottom: 32px; }
+    .step-dot { flex: 1; height: 4px; border-radius: 4px; background: var(--border); transition: background .3s; }
+    .step-dot.active { background: var(--primary); }
+
+    .screen { display: none; animation: fadeIn .3s ease; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .emoji { font-size: 3rem; margin-bottom: 16px; }
+    h2 { font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+    .desc { font-size: .9rem; color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
+
+    /* Lang cards */
+    .lang-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .lang-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 18px; border: 2px solid var(--border);
+      border-radius: var(--radius); cursor: pointer;
+      transition: all .2s; background: var(--surface);
+    }
+    .lang-card:hover, .lang-card.selected { border-color: var(--primary); }
+    .lang-card.selected { background: var(--primary-light); }
+    .lang-flag { font-size: 1.8rem; }
+    .lang-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; }
+    .lang-native { font-size: .8rem; color: var(--muted); }
+    .lang-check {
+      margin-left: auto; width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border); display: flex;
+      align-items: center; justify-content: center; transition: all .2s;
+      color: transparent;
+    }
+    .lang-card.selected .lang-check { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    /* Theme cards */
+    .theme-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    .theme-card {
+      padding: 24px 16px; border: 2px solid var(--border);
+      border-radius: var(--radius); cursor: pointer; text-align: center;
+      transition: all .2s; background: var(--surface);
+    }
+    .theme-card:hover, .theme-card.selected { border-color: var(--primary); }
+    .theme-card.selected { background: var(--primary-light); }
+    .theme-icon { font-size: 2.2rem; margin-bottom: 8px; }
+    .theme-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem; }
+
+    /* Auth choice */
+    .auth-cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .auth-card {
+      display: flex; align-items: center; gap: 16px;
+      padding: 18px 20px; border: 2px solid var(--border);
+      border-radius: var(--radius); cursor: pointer;
+      transition: all .2s; background: var(--surface);
+      text-decoration: none; color: var(--text);
+    }
+    .auth-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .auth-card.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .auth-card-icon { font-size: 1.8rem; }
+    .auth-card-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; }
+    .auth-card-desc { font-size: .8rem; opacity: .7; margin-top: 2px; }
+
+    /* Button */
+    .btn-next {
+      width: 100%; padding: 15px; border-radius: var(--radius);
+      border: none; background: var(--primary); color: #fff;
+      font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 16px rgba(37,99,235,.3);
+    }
+    .btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,.4); }
+    .btn-next:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .back-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: .875rem; cursor: pointer; margin-top: 16px;
+      width: 100%; text-align: center; padding: 8px;
+    }
+    .back-btn:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="steps">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+
+  {# ---- 1. Til tanlash ---- #}
+  <div class="screen active" id="screen1">
+    <div class="emoji">🌍</div>
+    <h2 id="s1_title">Tilni tanlang</h2>
+    <p class="desc" id="s1_desc">Qaysi tilda ishlashni xohlaysiz?</p>
+    <div class="lang-cards">
+      <div class="lang-card selected" data-lang="uz" onclick="selectLang('uz')">
+        <span class="lang-flag">🇺🇿</span>
+        <div><div class="lang-name">O'zbek</div><div class="lang-native">O'zbek tili</div></div>
+        <div class="lang-check">✓</div>
+      </div>
+      <div class="lang-card" data-lang="ru" onclick="selectLang('ru')">
+        <span class="lang-flag">🇷🇺</span>
+        <div><div class="lang-name">Русский</div><div class="lang-native">Русский язык</div></div>
+        <div class="lang-check">✓</div>
+      </div>
+      <div class="lang-card" data-lang="en" onclick="selectLang('en')">
+        <span class="lang-flag">🇬🇧</span>
+        <div><div class="lang-name">English</div><div class="lang-native">English language</div></div>
+        <div class="lang-check">✓</div>
+      </div>
+    </div>
+    <button class="btn-next" id="btn1" onclick="goTo(2)"><span id="btn1_text">Davom etish →</span></button>
+  </div>
+
+  {# ---- 2. Mavzu tanlash ---- #}
+  <div class="screen" id="screen2">
+    <div class="emoji">🎨</div>
+    <h2 id="s2_title">Mavzuni tanlang</h2>
+    <p class="desc" id="s2_desc">Qaysi ko'rinish qulay?</p>
+    <div class="theme-cards">
+      <div class="theme-card selected" data-theme-val="light" onclick="selectTheme('light')">
+        <div class="theme-icon">☀️</div>
+        <div class="theme-name" id="light_label">Kunduzgi</div>
+      </div>
+      <div class="theme-card" data-theme-val="dark" onclick="selectTheme('dark')">
+        <div class="theme-icon">🌙</div>
+        <div class="theme-name" id="dark_label">Tungi</div>
+      </div>
+    </div>
+    <button class="btn-next" onclick="goTo(3)"><span id="btn2_text">Davom etish →</span></button>
+    <button class="back-btn" onclick="goTo(1)"><span id="back1_text">← Orqaga</span></button>
+  </div>
+
+  {# ---- 3. Login yoki Register ---- #}
+  <div class="screen" id="screen3">
+    <div class="emoji">🚀</div>
+    <h2 id="s3_title">Boshlaylik!</h2>
+    <p class="desc" id="s3_desc">Hisobingiz bormi?</p>
+    <div class="auth-cards">
+      <a id="loginBtn" href="{% url 'accounts:login' %}" class="auth-card primary">
+        <span class="auth-card-icon">🔑</span>
+        <div>
+          <div class="auth-card-title" id="login_title">Kirish</div>
+          <div class="auth-card-desc" id="login_desc">Hisobim bor, kirmoqchiman</div>
+        </div>
+      </a>
+      <a id="registerBtn" href="{% url 'accounts:register' %}" class="auth-card">
+        <span class="auth-card-icon">✨</span>
+        <div>
+          <div class="auth-card-title" id="reg_title">Ro'yxatdan o'tish</div>
+          <div class="auth-card-desc" id="reg_desc">Yangi hisob yaratmoqchiman</div>
+        </div>
+      </a>
+    </div>
+    <button class="back-btn" onclick="goTo(2)"><span id="back2_text">← Orqaga</span></button>
+  </div>
+</div>
+
+<script>
+const TEXTS = {
+  uz: {
+    s1_title: "Tilni tanlang", s1_desc: "Qaysi tilda ishlashni xohlaysiz?",
+    s2_title: "Mavzuni tanlang", s2_desc: "Qaysi ko'rinish qulay?",
+    s3_title: "Boshlaylik!", s3_desc: "Hisobingiz bormi?",
+    light: "Kunduzgi", dark: "Tungi",
+    next: "Davom etish →", back: "← Orqaga",
+    login_title: "Kirish", login_desc: "Hisobim bor, kirmoqchiman",
+    reg_title: "Ro'yxatdan o'tish", reg_desc: "Yangi hisob yaratmoqchiman",
+  },
+  ru: {
+    s1_title: "Выберите язык", s1_desc: "На каком языке хотите работать?",
+    s2_title: "Выберите тему", s2_desc: "Какой вид удобнее?",
+    s3_title: "Начнём!", s3_desc: "У вас есть аккаунт?",
+    light: "Светлая", dark: "Тёмная",
+    next: "Продолжить →", back: "← Назад",
+    login_title: "Войти", login_desc: "У меня есть аккаунт",
+    reg_title: "Зарегистрироваться", reg_desc: "Хочу создать новый аккаунт",
+  },
+  en: {
+    s1_title: "Choose language", s1_desc: "Which language do you prefer?",
+    s2_title: "Choose theme", s2_desc: "Which look do you prefer?",
+    s3_title: "Let's start!", s3_desc: "Do you have an account?",
+    light: "Light", dark: "Dark",
+    next: "Continue →", back: "← Back",
+    login_title: "Sign in", login_desc: "I already have an account",
+    reg_title: "Sign up", reg_desc: "I want to create a new account",
+  }
+};
+
+let selectedLang  = 'uz';
+let selectedTheme = 'light';
+
+function selectLang(lang) {
+  selectedLang = lang;
+  document.querySelectorAll('.lang-card').forEach(c => c.classList.toggle('selected', c.dataset.lang === lang));
+  document.getElementById('htmlRoot').setAttribute('lang', lang);
+  document.body.setAttribute('data-theme', selectedTheme);
+  updateTexts();
+}
+
+function selectTheme(theme) {
+  selectedTheme = theme;
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.toggle('selected', c.dataset.themeVal === theme));
+  document.body.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+function updateTexts() {
+  const T = TEXTS[selectedLang];
+  document.getElementById('s1_title').textContent   = T.s1_title;
+  document.getElementById('s1_desc').textContent    = T.s1_desc;
+  document.getElementById('s2_title').textContent   = T.s2_title;
+  document.getElementById('s2_desc').textContent    = T.s2_desc;
+  document.getElementById('s3_title').textContent   = T.s3_title;
+  document.getElementById('s3_desc').textContent    = T.s3_desc;
+  document.getElementById('light_label').textContent = T.light;
+  document.getElementById('dark_label').textContent  = T.dark;
+  document.getElementById('btn1_text').textContent   = T.next;
+  document.getElementById('btn2_text').textContent   = T.next;
+  document.getElementById('back1_text').textContent  = T.back;
+  document.getElementById('back2_text').textContent  = T.back;
+  document.getElementById('login_title').textContent = T.login_title;
+  document.getElementById('login_desc').textContent  = T.login_desc;
+  document.getElementById('reg_title').textContent   = T.reg_title;
+  document.getElementById('reg_desc').textContent    = T.reg_desc;
+}
+
+function goTo(step) {
+  if (step === 3) {
+    // Til va mavzuni localStorage ga saqlaymiz
+    localStorage.setItem('edupath_lang', selectedLang);
+    localStorage.setItem('edupath_gender_theme', selectedTheme);
+    sessionStorage.setItem('edupath_session_theme', selectedTheme);
+    // Login/register URLlariga lang va theme qo'shamiz
+    document.getElementById('loginBtn').href    = `{% url 'accounts:login' %}?lang=${selectedLang}&theme=${selectedTheme}`;
+    document.getElementById('registerBtn').href = `{% url 'accounts:register' %}?lang=${selectedLang}&theme=${selectedTheme}`;
+  }
+  document.querySelectorAll('.screen').forEach((s, i) => s.classList.toggle('active', i + 1 === step));
+  document.querySelectorAll('.step-dot').forEach((d, i) => d.classList.toggle('active', i + 1 <= step));
+}
+
+// Tizim mavzusiga moslash
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+selectTheme(systemDark ? 'dark' : 'light');
+</script>
+</body>
+</html>

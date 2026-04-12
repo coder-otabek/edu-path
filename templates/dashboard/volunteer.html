@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Volontyorlik{% endblock %}
+
+{% block content %}
+
+  <div class="d-flex align-center justify-between mb-4">
+    <div>
+      <h1 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;"><span data-i18n="vol_title">🤝 Volontyorlik</span></h1>
+      <p style="font-size:.825rem;color:var(--text-muted);margin-top:2px;" data-i18n="vol_subtitle">Tajriba va CV boyitish</p>
+    </div>
+    <a href="{% url 'dashboard:volunteer_add' %}" class="btn btn-primary btn-sm">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+      </svg>
+      Qo'shish
+    </a>
+  </div>
+
+  {# Statistika #}
+  <div class="stats-grid mb-16" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="stat-card">
+      <div class="stat-card-val">{{ total_hours }}</div>
+      <div class="stat-card-label" data-i18n="vol_total_hours">Jami soat</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-val">{{ count }}</div>
+      <div class="stat-card-label" data-i18n="vol_count">Faoliyat</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-val" style="font-size:1rem;color:{% if total_hours >= 100 %}var(--success){% elif total_hours >= 50 %}var(--warning){% else %}var(--danger){% endif %}">
+        {% if total_hours >= 100 %}<span data-i18n="vol_excellent">A'lo</span>{% elif total_hours >= 50 %}<span data-i18n="vol_good">Yaxshi</span>{% elif total_hours > 0 %}<span data-i18n="vol_low">Kam</span>{% else %}—{% endif %}
+      </div>
+      <div class="stat-card-label" data-i18n="vol_cv_level">CV darajasi</div>
+    </div>
+  </div>
+
+  {# Progress bar #}
+  {% if total_hours > 0 %}
+    <div class="card mb-16">
+      <div class="d-flex align-center justify-between mb-8">
+        <span style="font-size:.875rem;font-weight:600;" data-i18n="vol_road">100 soatga yo'l</span>
+        <span style="font-size:.875rem;font-weight:700;color:var(--primary);">{{ total_hours }}/100</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" data-value="{% if total_hours >= 100 %}100{% else %}{{ total_hours }}{% endif %}"></div>
+      </div>
+      <p style="font-size:.75rem;color:var(--text-muted);margin-top:6px;">
+        <span data-i18n="vol_ideal">100 soat — universitetlar qabul uchun ideal daraja</span>
+      </p>
+    </div>
+  {% endif %}
+
+  {# Faoliyatlar ro'yxati #}
+  {% if activities %}
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% for act in activities %}
+        <div class="card" style="padding:16px;">
+          <div class="d-flex align-center gap-12" style="margin-bottom:10px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
+              🤝
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                {{ act.organization }}
+              </div>
+              <div style="font-size:.8rem;color:var(--text-secondary);">{{ act.role }}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:var(--font-display);font-weight:800;font-size:1.1rem;color:var(--primary);">{{ act.hours }}</div>
+              <div style="font-size:.7rem;color:var(--text-muted);" data-i18n="vol_hours_label">soat</div>
+            </div>
+          </div>
+
+          <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:{% if act.description %}8px{% else %}0{% endif %};">
+            📅 {{ act.start_date|date:"d.m.Y" }} —
+            {% if act.is_ongoing %}<span style="color:var(--success);font-weight:600;" data-i18n="vol_now">hozir</span>
+            {% elif act.end_date %}{{ act.end_date|date:"d.m.Y" }}
+            {% else %}—{% endif %}
+          </div>
+
+          {% if act.description %}
+            <p style="font-size:.825rem;color:var(--text-secondary);line-height:1.55;margin-bottom:10px;">
+              {{ act.description|truncatechars:120 }}
+            </p>
+          {% endif %}
+
+          {# AI CV matni #}
+          {% if act.ai_cv_text %}
+            <div style="background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+              <div style="font-size:.72rem;font-weight:700;color:var(--accent);margin-bottom:4px;" data-i18n="vol_ai_cv"><span data-i18n="vol_ai_cv">🤖 CV uchun AI matn (inglizcha):</span></div>
+              <p style="font-size:.8rem;color:var(--text-secondary);line-height:1.6;margin:0;font-style:italic;">{{ act.ai_cv_text }}</p>
+            </div>
+          {% endif %}
+
+          <div class="d-flex gap-8">
+            {% if act.certificate %}
+              <a href="{{ act.certificate.url }}" target="_blank" class="btn btn-ghost btn-sm">📎 Sertifikat</a>
+            {% endif %}
+            <form method="post" action="{% url 'dashboard:volunteer_delete' act.pk %}" style="margin-left:auto;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm" style="background:#FEE2E2;color:var(--danger);"
+                onclick="return confirm('O\'chirasizmi?')" data-i18n="btn_delete">🗑️ O'chirish</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="card text-center" style="padding:48px 24px;">
+      <div style="font-size:3.5rem;margin-bottom:16px;">🌱</div>
+      <h3 style="font-family:var(--font-display);font-weight:700;margin-bottom:8px;" data-i18n="vol_empty">Hali faoliyat yo'q</h3>
+      <p style="font-size:.875rem;color:var(--text-secondary);margin-bottom:24px;line-height:1.6;">
+        <span data-i18n="vol_empty_desc">Volontyor faoliyatingizni qo'shing — AI avtomatik CV matni yozib beradi!</span>
+      </p>
+      <a href="{% url 'dashboard:volunteer_add' %}" class="btn btn-primary btn-lg">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Faoliyat qo'shish
+      </a>
+    </div>
+  {% endif %}
+
+{% endblock %}

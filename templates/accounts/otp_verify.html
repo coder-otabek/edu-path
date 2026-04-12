@@ -1,0 +1,29 @@
+{% extends "auth_base.html" %}
+{% load static %}
+{% block title %}Kodni tasdiqlash{% endblock %}
+{% block hero_title %}Emailingizni tekshiring{% endblock %}
+{% block hero_sub %}{{ masked_email }} manziliga 6 xonali kod yuborildi{% endblock %}
+
+{% block content %}
+  <h2 class="auth-title" data-i18n="otp_title">Tasdiqlash kodi</h2>
+  <p class="auth-subtitle" data-i18n="otp_sub">Emailga kelgan 6 xonali kodni kiriting</p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      {% for e in form.non_field_errors %}<div class="alert alert-error">{{ e }}</div>{% endfor %}
+    {% endif %}
+    <div class="form-group">
+      <label class="form-label" for="id_code">Tasdiqlash kodi <span>*</span></label>
+      <input type="text" id="id_code" name="code" inputmode="numeric" pattern="[0-9]{6}"
+        class="form-control {% if form.code.errors %}border-danger{% endif %}"
+        placeholder="000000" maxlength="6" autocomplete="one-time-code"
+        style="font-size:1.6rem; letter-spacing:8px; text-align:center; font-family:var(--font-display);" required>
+      {% if form.code.errors %}<p class="form-error">{{ form.code.errors.0 }}</p>{% endif %}
+      <p class="form-hint">Kod 15 daqiqa davomida amal qiladi</p>
+    </div>
+    <button type="submit" class="btn btn-primary btn-full btn-lg"><span data-i18n="otp_btn">Tasdiqlash</span></button>
+  </form>
+
+  <p class="auth-footer mt-16"><a href="{% url 'accounts:forgot_password' %}"><span data-i18n="otp_back">← Qayta yuborish</span></a></p>
+{% endblock %}

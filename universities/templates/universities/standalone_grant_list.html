@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Grantlar{% endblock %}
+
+{% block content %}
+<div class="page-standalone-grants">
+
+  <div class="sg-header">
+    <div>
+      <h1 class="sg-header__title" data-i18n="standalone_title">💰 Grantlar</h1>
+      <p class="sg-header__sub" data-i18n="standalone_sub">Xorijiy va mahalliy grantlar ro'yxati</p>
+    </div>
+  </div>
+
+  {# ── Tablar ── #}
+  <div class="sg-tabs">
+    <a href="?type=" class="sg-tab {% if not grant_type %}sg-tab--active{% endif %}">
+      <span class="tab-full" data-i18n="unis_tab_all">🌐 Barchasi</span><span class="tab-short">🌐</span>
+    </a>
+    <a href="?type=foreign" class="sg-tab sg-tab--foreign {% if grant_type == 'foreign' %}sg-tab--active{% endif %}">
+      <span class="tab-full" data-i18n="unis_tab_foreign">✈️ Xorijiy grantlar</span><span class="tab-short" data-i18n="grant_type_foreign_short">✈️ Xorijiy</span>
+    </a>
+    <a href="?type=local" class="sg-tab sg-tab--local {% if grant_type == 'local' %}sg-tab--active{% endif %}">
+      <span class="tab-full" data-i18n="unis_tab_local">🏛️ Mahalliy grantlar</span><span class="tab-short" data-i18n="grant_type_local_short">🏛️ Mahalliy</span>
+    </a>
+  </div>
+
+  {# ── Qidiruv ── #}
+  <form class="sg-search" method="get">
+    <input type="hidden" name="type" value="{{ grant_type }}">
+    <div class="sg-search__wrap">
+      <span class="sg-search__icon">🔍</span>
+      <input type="text" name="q" value="{{ search }}"
+             placeholder="Grant nomi..." data-i18n-ph="standalone_search_ph" class="sg-search__input">
+    </div>
+    <button type="submit" class="btn btn--primary" data-i18n="search_btn">Qidirish</button>
+    {% if search %}<a href="?type={{ grant_type }}" class="btn btn--ghost">✕</a>{% endif %}
+  </form>
+
+  <p class="sg-count">
+    <strong id="sg-count-num">{{ grants.count }}</strong> <span id="sg-count-text" data-count="{{ grants.count }}" data-i18n="standalone_count">ta grant topildi</span>
+  </p>
+
+  {# ── Grantlar ── #}
+  {% if grants %}
+    <div class="sg-list">
+      {% for grant in grants %}
+        <a href="{{ grant.get_absolute_url }}" class="sg-card">
+
+          {# Cover / Logo #}
+          <div class="sg-card__cover">
+            {% if grant.cover_image %}
+              <img src="{{ grant.cover_image.url }}" alt="{{ grant.name }}" class="sg-card__cover-img">
+            {% else %}
+              <div class="sg-card__cover-placeholder sg-card__cover-placeholder--{{ grant.grant_type }}">
+                {% if grant.grant_type == 'foreign' %}✈️{% elif grant.grant_type == 'local' %}🏛️{% else %}🎓{% endif %}
+              </div>
+            {% endif %}
+            <span class="sg-card__badge sg-card__badge--{{ grant.grant_type }}">
+              {% if grant.grant_type == 'foreign' %}<span data-i18n="grant_type_foreign">Xorijiy grant</span>
+              {% elif grant.grant_type == 'local' %}<span data-i18n="grant_type_local">Mahalliy grant</span>
+              {% else %}<span data-i18n="grant_type_both">Xorijiy va Mahalliy</span>{% endif %}
+            </span>
+          </div>
+
+          <div class="sg-card__body">
+            <div class="sg-card__top">
+              {% if grant.logo %}
+                <img src="{{ grant.logo.url }}" alt="" class="sg-card__logo">
+              {% else %}
+                <div class="sg-card__logo-placeholder">💰</div>
+              {% endif %}
+              <div>
+                <h3 class="sg-card__name">{{ grant.name }}</h3>
+                <p class="sg-card__meta">
+                  {% if grant.country %}🌍 {{ grant.get_country_display }}{% endif %}
+                  {% if grant.founded_year %} · 📅 {{ grant.founded_year }}{% endif %}
+                </p>
+              </div>
+            </div>
+
+            {% if grant.description %}
+              <p class="sg-card__desc">{{ grant.description|truncatechars:120 }}</p>
+            {% endif %}
+
+            <div class="sg-card__chips">
+              {% if grant.degree != 'all' %}
+                <span class="sg-chip">
+                  {% if grant.degree == 'bachelor' %}<span data-i18n="degree_bachelor">Bakalavr</span>
+                  {% elif grant.degree == 'master' %}<span data-i18n="degree_master">Magistr</span>
+                  {% elif grant.degree == 'phd' %}<span data-i18n="degree_phd">PhD</span>
+                  {% else %}<span data-i18n="degree_all">Barcha</span>{% endif %}
+                </span>
+              {% endif %}
+              {% if grant.amount %}<span class="sg-chip">💰 {{ grant.amount }}</span>{% endif %}
+              {% if grant.min_ielts %}<span class="sg-chip">IELTS {{ grant.min_ielts }}+</span>{% endif %}
+              {% if grant.winners_count %}<span class="sg-chip">👥 {{ grant.winners_count }}</span>{% endif %}
+            </div>
+
+            <div class="sg-card__footer">
+              {% if grant.universities.exists %}
+                <span class="sg-card__unis">🎓 {{ grant.universities.count }} ta universitetda</span>
+              {% else %}
+                <span class="sg-card__unis sg-card__unis--general">🌐 <span data-i18n="standalone_general">Umumiy grant</span></span>
+              {% endif %}
+              {% with vc=grant.videos.count %}
+                {% if vc %}<span class="sg-card__videos">▶ {{ vc }} <span data-i18n="uni_detail_video_count">ta video qo'llanma</span></span>{% endif %}
+              {% endwith %}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="sg-empty">
+      <div>💰</div>
+      <p data-i18n="unis_empty_text">Hech narsa topilmadi</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-standalone-grants { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.sg-header { margin-bottom: 24px; }
+.sg-header__title { font-size: 1.7rem; font-weight: 700; margin: 0 0 4px; color: var(--text-primary); }
+.sg-header__sub   { margin: 0; color: var(--text-muted); font-size: .9rem; }
+
+.sg-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: nowrap; }
+.sg-tab {
+  padding: 8px 14px; border-radius: 24px;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-secondary); font-size: .82rem; font-weight: 500;
+  text-decoration: none; transition: all .2s;
+  white-space: nowrap; flex: 1; text-align: center;
+}
+.sg-tab:hover { border-color: var(--accent); color: var(--accent); }
+.sg-tab--active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sg-tab--foreign.sg-tab--active { background: #3b82f6; border-color: #3b82f6; }
+.sg-tab--local.sg-tab--active   { background: #10b981; border-color: #10b981; }
+
+.sg-search { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.sg-search__wrap { flex: 1; min-width: 200px; position: relative; }
+.sg-search__icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+.sg-search__input {
+  width: 100%; padding: 10px 12px 10px 34px;
+  border: 1.5px solid var(--border-color); border-radius: 10px;
+  background: var(--bg-card); color: var(--text-primary);
+  font-size: .9rem; box-sizing: border-box;
+}
+.sg-search__input:focus { outline: none; border-color: var(--accent); }
+
+.sg-count { color: var(--text-muted); font-size: .88rem; margin-bottom: 16px; }
+
+.sg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+.sg-card {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 16px; overflow: hidden;
+  text-decoration: none; color: inherit;
+  display: flex; flex-direction: column;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.sg-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.1); border-color: var(--accent); }
+
+.sg-card__cover { position: relative; height: 130px; overflow: hidden; }
+.sg-card__cover-img { width: 100%; height: 100%; object-fit: cover; }
+.sg-card__cover-placeholder {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  font-size: 2.8rem; opacity: .4;
+}
+.sg-card__cover-placeholder--foreign { background: rgba(59,130,246,.08); }
+.sg-card__cover-placeholder--local   { background: rgba(16,185,129,.08); }
+.sg-card__cover-placeholder--both    { background: rgba(124,58,237,.08); }
+
+.sg-card__badge {
+  position: absolute; top: 8px; right: 8px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: .72rem; font-weight: 600;
+}
+.sg-card__badge--foreign { background: rgba(59,130,246,.85); color: #fff; }
+.sg-card__badge--local   { background: rgba(16,185,129,.85); color: #fff; }
+.sg-card__badge--both    { background: rgba(124,58,237,.85); color: #fff; }
+
+.sg-card__body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.sg-card__top  { display: flex; align-items: center; gap: 10px; }
+.sg-card__logo { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; border: 1px solid var(--border-color); }
+.sg-card__logo-placeholder {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--accent-soft); display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.sg-card__name { font-size: .95rem; font-weight: 600; margin: 0; color: var(--text-primary); }
+.sg-card__meta { font-size: .75rem; color: var(--text-muted); margin: 2px 0 0; }
+.sg-card__desc { font-size: .82rem; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+
+.sg-card__chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.sg-chip {
+  padding: 2px 8px; border-radius: 20px;
+  font-size: .72rem; font-weight: 500;
+  background: var(--accent-soft); color: var(--accent);
+}
+
+.sg-card__footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: auto; padding-top: 8px;
+  border-top: 1px solid var(--border-color); font-size: .78rem;
+}
+.sg-card__unis         { color: var(--text-muted); }
+.sg-card__unis--general { color: var(--accent); font-weight: 500; }
+.sg-card__videos       { color: #3b82f6; font-weight: 500; }
+
+.sg-empty { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: .95rem; }
+.sg-empty div { font-size: 2.5rem; margin-bottom: 10px; }
+
+.btn--primary {
+  background: var(--accent); color: #fff;
+  padding: 10px 18px; border-radius: 10px;
+  border: none; font-size: .9rem; font-weight: 600;
+  cursor: pointer; transition: opacity .2s;
+}
+.btn--primary:hover { opacity: .88; }
+.btn--ghost {
+  padding: 9px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-secondary); text-decoration: none;
+  font-size: .88rem; font-weight: 500; transition: all .2s;
+}
+.btn--ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 600px) { .sg-list { grid-template-columns: 1fr; } }
+
+/* Tab responsive */
+.tab-short { display: none; }
+@media (max-width: 480px) {
+  .tab-full  { display: none; }
+  .tab-short { display: inline; }
+  .sg-tab { padding: 8px 10px; font-size: .8rem; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ruscha son moslashuvi: 1 грант, 2-4 гранта, 5+ грантов
+document.addEventListener('DOMContentLoaded', function() {
+  const el    = document.getElementById('sg-count-text');
+  if (!el) return;
+  const lang  = window.getCurrentLang ? window.getCurrentLang() : 'uz';
+  const count = parseInt(el.dataset.count || 0);
+
+  if (lang === 'ru') {
+    let word;
+    const mod10  = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11)          word = 'грант найден';
+    else if ([2,3,4].includes(mod10) && ![12,13,14].includes(mod100)) word = 'гранта найдено';
+    else                                        word = 'грантов найдено';
+    el.textContent = word;
+  } else if (lang === 'en') {
+    el.textContent = count === 1 ? 'grant found' : 'grants found';
+  } else {
+    el.textContent = 'ta grant topildi';
+  }
+});
+</script>
+{% endblock %}

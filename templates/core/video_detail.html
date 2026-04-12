@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ video.title }}{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .main-content { padding: 0 !important; }
+
+        .video-page {
+            height: calc(100dvh - var(--nav-h) - var(--bottom-nav-h));
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ── Header ── */
+        .video-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            display: flex; align-items: center; gap: 10px;
+            flex-shrink: 0;
+        }
+        .video-header a { color: var(--text-muted); display: flex; align-items: center; }
+        .video-header-title {
+            flex: 1; min-width: 0;
+            font-weight: 700; font-size: .9rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ── Player ── */
+        .video-wrap {
+            position: relative; width: 100%;
+            background: #000; flex-shrink: 0;
+            aspect-ratio: 16/9; overflow: hidden;
+        }
+        .video-wrap iframe {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            border: none; display: block;
+        }
+        .video-thumb-overlay {
+            position: absolute; inset: 0;
+            background: #000 center/cover no-repeat;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 2; transition: opacity .3s;
+        }
+        .video-thumb-overlay.hidden { opacity: 0; pointer-events: none; }
+        .play-btn {
+            width: 64px; height: 64px;
+            background: rgba(255,255,255,.9); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,.4);
+            transition: transform .15s, background .15s;
+        }
+        .video-thumb-overlay:hover .play-btn { transform: scale(1.1); background: #fff; }
+
+        /* ── Info panel ── */
+        .video-info { flex: 1; overflow-y: auto; padding: 16px; }
+        .video-info h2 {
+            font-family: var(--font-display); font-size: 1rem;
+            font-weight: 700; margin-bottom: 6px;
+        }
+        .video-info p {
+            font-size: .875rem; color: var(--text-secondary);
+            line-height: 1.6; margin-bottom: 16px;
+        }
+
+        /* Progress bar */
+        .progress-bar-wrap {
+            height: 3px; background: var(--border);
+            border-radius: 2px; margin-bottom: 16px; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; background: var(--primary, #6366f1);
+            border-radius: 2px; width: 0%; transition: width .5s linear;
+        }
+
+        /* Next video card */
+        .next-video-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px; margin-bottom: 12px;
+            cursor: pointer; border-radius: 12px;
+            border: 1px solid var(--border); background: var(--surface);
+            transition: background .15s;
+        }
+        .next-video-card:hover { background: var(--surface-hover, rgba(0,0,0,.04)); }
+        .next-video-thumb {
+            width: 80px; height: 48px; border-radius: 6px;
+            object-fit: cover; flex-shrink: 0; background: var(--border);
+        }
+        .next-video-thumb-placeholder {
+            width: 80px; height: 48px; border-radius: 6px;
+            flex-shrink: 0; background: var(--border);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .next-video-meta { flex: 1; min-width: 0; }
+        .next-video-label { font-size: .7rem; color: var(--text-muted); margin-bottom: 4px; }
+        .next-video-title {
+            font-weight: 600; font-size: .85rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ── Bottom sheet ── */
+        .sheet-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.6); z-index: 1000;
+            display: flex; align-items: flex-end;
+        }
+        .sheet {
+            background: var(--surface); width: 100%;
+            border-radius: 20px 20px 0 0; padding: 24px;
+            box-shadow: 0 -4px 32px rgba(0,0,0,.2);
+            animation: sheetUp .25s ease;
+        }
+        @keyframes sheetUp {
+            from { transform: translateY(100%); } to { transform: translateY(0); }
+        }
+        .sheet h3 { font-family: var(--font-display); font-weight: 700; margin-bottom: 8px; }
+        .sheet p { font-size: .875rem; color: var(--text-secondary); margin-bottom: 20px; }
+        .sheet-btns { display: flex; gap: 10px; }
+
+        /* ── Next video toast ── */
+        .next-toast {
+            position: fixed;
+            bottom: calc(var(--bottom-nav-h, 60px) + 16px);
+            left: 50%; transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px; padding: 12px 16px;
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.25);
+            z-index: 999;
+            min-width: 300px; max-width: calc(100vw - 32px);
+            animation: toastUp .3s ease;
+        }
+        @keyframes toastUp {
+            from { transform: translateX(-50%) translateY(24px); opacity: 0; }
+            to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+        }
+        .toast-timer-wrap {
+            position: relative; width: 44px; height: 44px; flex-shrink: 0;
+        }
+        .toast-timer-svg { transform: rotate(-90deg); }
+        .toast-timer-bg   { fill: none; stroke: var(--border,#e5e7eb); stroke-width: 3; }
+        .toast-timer-ring {
+            fill: none; stroke: var(--primary,#6366f1);
+            stroke-width: 3; stroke-linecap: round;
+            stroke-dasharray: 113; stroke-dashoffset: 113;
+            transition: stroke-dashoffset .9s linear;
+        }
+        .toast-timer-num {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .8rem; font-weight: 700; color: var(--primary,#6366f1);
+        }
+        .toast-info { flex: 1; min-width: 0; }
+        .toast-label { font-size: .7rem; color: var(--text-muted); margin-bottom: 3px; }
+        .toast-title {
+            font-weight: 600; font-size: .85rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .toast-btns { display: flex; gap: 8px; flex-shrink: 0; }
+        .toast-btn {
+            padding: 8px 14px; border-radius: 8px;
+            font-size: .8rem; font-weight: 600;
+            cursor: pointer; border: none; outline: none;
+        }
+        .toast-btn-yes { background: var(--primary,#6366f1); color: #fff; }
+        .toast-btn-no  { background: var(--border,#e5e7eb); color: var(--text-secondary); }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="video-page">
+
+    {# ── Header ── #}
+    <div class="video-header">
+        <a href="{% url 'core:videos' %}" aria-label="Orqaga">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div class="video-header-title">{{ video.title }}</div>
+    </div>
+
+    {# ── Player ── #}
+    <div class="video-wrap">
+        {% if video.get_thumbnail %}
+            <div class="video-thumb-overlay" id="thumbOverlay"
+                 style="background-image:url('{{ video.get_thumbnail }}');"
+                 onclick="activatePlayer()">
+                <div class="play-btn">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="#333">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if video.is_bunny %}
+            <iframe id="videoPlayer" src="" data-src="{{ video.get_embed_url }}"
+                    loading="lazy"
+                    allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture"
+                    allowfullscreen></iframe>
+        {% else %}
+            <iframe id="videoPlayer" src=""
+                    data-src="{{ video.get_embed_url }}?enablejsapi=1&rel=0&modestbranding=1&controls=1"
+                    allow="accelerometer;autoplay;encrypted-media;gyroscope;picture-in-picture"
+                    allowfullscreen></iframe>
+        {% endif %}
+    </div>
+
+    {# ── Info ── #}
+    <div class="video-info">
+        <h2>{{ video.title }}</h2>
+
+        <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressBar"
+                 {% if my_progress and my_progress.watched %}style="width:100%"{% endif %}></div>
+        </div>
+
+        {% if video.description %}<p>{{ video.description }}</p>{% endif %}
+
+        {% if next_video %}
+            <div class="next-video-card"
+                 onclick="window.location.href='{% url 'core:video_detail' next_video.pk %}'">
+                {% if next_video.get_thumbnail %}
+                    <img class="next-video-thumb"
+                         src="{{ next_video.get_thumbnail }}" alt="{{ next_video.title }}"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div class="next-video-thumb-placeholder" style="display:none;">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"
+                             stroke="var(--text-muted)" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                        </svg>
+                    </div>
+                {% else %}
+                    <div class="next-video-thumb-placeholder">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"
+                             stroke="var(--text-muted)" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                        </svg>
+                    </div>
+                {% endif %}
+                <div class="next-video-meta">
+                    <div class="next-video-label" data-i18n="video_next">Keyingi dars</div>
+                    <div class="next-video-title">{{ next_video.title }}</div>
+                </div>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"
+                     stroke="var(--text-muted)" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Resume bottom sheet ── #}
+{% if my_progress and my_progress.position > 5 and not my_progress.watched %}
+    <div id="resumeDialog" class="sheet-backdrop">
+        <div class="sheet">
+            <h3 data-i18n="video_resume_title">Qaerdan davom etasiz?</h3>
+            <p data-i18n="video_resume_desc">Siz bu videoni oxirigacha ko'rmagansiz.</p>
+            <div class="sheet-btns">
+                <button onclick="resumeFrom({{ my_progress.position|floatformat:0 }})"
+                        class="btn btn-primary" style="flex:1;"
+                        data-i18n="video_resume_btn">Davom etish</button>
+                <button onclick="startOver()"
+                        class="btn btn-outline" style="flex:1;"
+                        data-i18n="video_restart_btn">Boshidan</button>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    /* ── Konstantalar ── */
+    const VIDEO_ID     = {{ video.pk }};
+    const CSRF         = '{{ csrf_token }}';
+    const SAVED_POS    = {{ my_progress.position|default:0|floatformat:0 }};
+    const IS_BUNNY     = {{ video.is_bunny|yesno:"true,false" }};
+    const PROGRESS_URL = '{% url "core:video_progress" %}';
+    {% if next_video %}
+    const NEXT_URL       = '{% url "core:video_detail" next_video.pk %}';
+    const NEXT_TITLE_STR = "{{ next_video.title|escapejs }}";
+    {% else %}
+    const NEXT_URL       = null;
+    const NEXT_TITLE_STR = '';
+    {% endif %}
+
+    /* ── State ── */
+    let saveTimer       = null;
+    let nextTimer       = null;
+    let lastSaved       = 0;
+    let duration        = 0;
+    let player          = null;
+    let playerActivated = false;
+    let watchedSaved    = false;   // watched=True bir marta yuborilgandan keyin qayta yubormaslik
+
+    /* ── Player lazy activate ── */
+    function activatePlayer() {
+        if (playerActivated) return;
+        playerActivated = true;
+        const iframe = document.getElementById('videoPlayer');
+        iframe.src = iframe.dataset.src;
+        const ov = document.getElementById('thumbOverlay');
+        if (ov) ov.classList.add('hidden');
+    }
+    (function(){ if (!document.getElementById('thumbOverlay')) activatePlayer(); })();
+
+    /* ── Progress bar ── */
+    function updateProgressBar(pos) {
+        if (!duration) return;
+        const bar = document.getElementById('progressBar');
+        if (bar) bar.style.width = Math.min(100, pos / duration * 100).toFixed(1) + '%';
+    }
+
+    /* ── Progress saqlash ── */
+    function saveProgress(watched = false) {
+        let pos = lastSaved;
+        if (IS_BUNNY && player && player.getCurrentTime)
+            pos = Math.floor(player.getCurrentTime());
+        else if (!IS_BUNNY && window._ytPlayer && window._ytPlayer.getCurrentTime)
+            pos = Math.floor(window._ytPlayer.getCurrentTime());
+
+        if (pos === lastSaved && !watched) return;
+        lastSaved = pos;
+        updateProgressBar(pos);
+
+        const payload = JSON.stringify({
+            video_id: VIDEO_ID, position: pos,
+            watched: watched, csrfmiddlewaretoken: CSRF
+        });
+
+        // keepalive: true — sahifa o'tib ketsa ham so'rov bajariladi
+        fetch(PROGRESS_URL, {
+            method:   'POST',
+            headers:  {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+            body:     payload,
+            keepalive: true
+        }).catch(() => {});
+    }
+
+    /* ── watched=True ni ishonchli saqlash ── */
+    async function saveWatched() {
+        if (watchedSaved) return;
+        watchedSaved = true;
+        updateProgressBar(duration || 9999);
+        try {
+            await fetch(PROGRESS_URL, {
+                method:    'POST',
+                headers:   {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body:      JSON.stringify({ video_id: VIDEO_ID, position: lastSaved, watched: true }),
+                keepalive: true
+            });
+        } catch(_) {}
+    }
+
+    /* ── Resume dialog ── */
+    function closeDialog() {
+        const d = document.getElementById('resumeDialog');
+        if (d) d.remove();
+    }
+    function resumeFrom(pos) {
+        closeDialog();
+        activatePlayer();
+        const doSeek = () => {
+            if (IS_BUNNY && player)     { player.seek(pos); player.play(); }
+            else if (window._ytPlayer)  { window._ytPlayer.seekTo(pos, true); window._ytPlayer.playVideo(); }
+            else setTimeout(doSeek, 300);
+        };
+        setTimeout(doSeek, 500);
+    }
+    function startOver() { closeDialog(); resumeFrom(0); }
+
+    /* ── Next video toast ── */
+    function goNextVideo() {
+        if (!NEXT_URL) return;
+        const old = document.getElementById('nextToast');
+        if (old) old.remove();
+        clearInterval(nextTimer);
+
+        let secs = 5;
+        const CIRC = 113;
+
+        const toast = document.createElement('div');
+        toast.className = 'next-toast';
+        toast.id = 'nextToast';
+        toast.innerHTML = `
+            <div class="toast-timer-wrap">
+                <svg class="toast-timer-svg" width="44" height="44" viewBox="0 0 44 44">
+                    <circle class="toast-timer-bg" cx="22" cy="22" r="18"/>
+                    <circle class="toast-timer-ring" id="timerRing" cx="22" cy="22" r="18"
+                            stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"/>
+                </svg>
+                <div class="toast-timer-num" id="timerNum">${secs}</div>
+            </div>
+            <div class="toast-info">
+                <div class="toast-label" data-i18n="video_next">Keyingi dars</div>
+                <div class="toast-title">${NEXT_TITLE_STR}</div>
+            </div>
+            <div class="toast-btns">
+                <button class="toast-btn toast-btn-yes" onclick="confirmNext()">Ha, o'tish</button>
+                <button class="toast-btn toast-btn-no"  onclick="cancelNext()">Bekor</button>
+            </div>`;
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            const ring = document.getElementById('timerRing');
+            if (ring) {
+                ring.style.transition = `stroke-dashoffset ${secs}s linear`;
+                ring.style.strokeDashoffset = '0';
+            }
+        });
+
+        nextTimer = setInterval(() => {
+            secs--;
+            const el = document.getElementById('timerNum');
+            if (el) el.textContent = secs;
+            if (secs <= 0) confirmNext();
+        }, 1000);
+    }
+
+    async function confirmNext() {
+        clearInterval(nextTimer);
+        const t = document.getElementById('nextToast');
+        if (t) t.remove();
+        try {
+            await fetch(PROGRESS_URL, {
+                method:    'POST',
+                headers:   {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body:      JSON.stringify({ video_id: VIDEO_ID, position: lastSaved, watched: true }),
+                keepalive: true
+            });
+        } catch(_) {}
+        window.location.href = NEXT_URL;
+    }
+    function cancelNext() {
+        clearInterval(nextTimer);
+        const t = document.getElementById('nextToast');
+        if (t) t.remove();
+    }
+
+    /* ── Video tugash handleri ── */
+    function onVideoEnded() {
+        if (watchedSaved) return;
+        clearInterval(saveTimer);
+        saveWatched().then(() => goNextVideo()).catch(() => goNextVideo());
+    }
+
+    /* ═══════════════════════════════════════════
+       BUNNY.NET PLAYER
+    ═══════════════════════════════════════════ */
+    if (IS_BUNNY) {
+        let durationPollTimer = null;
+        let lastTimeupdateAt  = 0;
+        let prevCurrentTime   = -1;
+        let isPlaying         = false;
+
+        function bunnyPostMsg(data) {
+            const iframe = document.getElementById('videoPlayer');
+            if (iframe && iframe.contentWindow)
+                iframe.contentWindow.postMessage(data, '*');
+        }
+
+        window.addEventListener('message', function(e) {
+            if (!e.data || !e.data.event) return;
+            const ev = e.data.event;
+
+            if (ev === 'playerReady') {
+                const iframe = document.getElementById('videoPlayer');
+                player = {
+                    seek:           t => bunnyPostMsg({event:'seek', time:t}),
+                    play:           ()  => bunnyPostMsg({event:'play'}),
+                    pause:          ()  => bunnyPostMsg({event:'pause'}),
+                    getCurrentTime: ()  => lastSaved,
+                };
+                // duration so'raymiz
+                bunnyPostMsg({event: 'getDuration'});
+                if (!document.getElementById('resumeDialog') && SAVED_POS > 5)
+                    player.seek(SAVED_POS);
+            }
+
+            // duration eventlari — Bunny turli nomlar ishlatishi mumkin
+            if ((ev === 'durationchange' || ev === 'duration') && e.data.duration)
+                duration = e.data.duration;
+
+            if (ev === 'timeupdate' && e.data.currentTime !== undefined) {
+                const ct = Math.floor(e.data.currentTime);
+
+                // timeupdate ichida duration ham kelishi mumkin
+                if (!duration && e.data.duration && e.data.duration > 0)
+                    duration = e.data.duration;
+
+                lastTimeupdateAt = Date.now();
+
+                // currentTime keskin kamaydi => video qayta boshlandi yoki tugadi
+                if (!watchedSaved && prevCurrentTime > 10 && ct < prevCurrentTime - 2) {
+                    prevCurrentTime = ct;
+                    lastSaved = ct;
+                    onVideoEnded();
+                    return;
+                }
+
+                prevCurrentTime = ct;
+                lastSaved = ct;
+                updateProgressBar(lastSaved);
+
+                // duration ma'lum bo'lsa — 90% ga yetdi => tugadi
+                if (!watchedSaved && duration > 0 && lastSaved >= duration * 0.9) {
+                    onVideoEnded();
+                }
+            }
+
+            if (ev === 'playing') {
+                isPlaying = true;
+                clearInterval(saveTimer);
+                saveTimer = setInterval(saveProgress, 5000);
+                // duration hali noma'lum bo'lsa har 2 sekundda so'raymiz
+                clearInterval(durationPollTimer);
+                if (!duration) {
+                    durationPollTimer = setInterval(() => {
+                        if (duration) { clearInterval(durationPollTimer); return; }
+                        bunnyPostMsg({event: 'getDuration'});
+                    }, 2000);
+                }
+            }
+
+            if (ev === 'pause') {
+                isPlaying = false;
+                clearInterval(saveTimer);
+                clearInterval(durationPollTimer);
+                saveProgress();
+            }
+
+            if (ev === 'ended') { onVideoEnded(); }
+        });
+
+        // Fallback: timeupdate 3+ soniya kelmasa va playing bo'lgan bo'lsa => tugadi
+        setInterval(() => {
+            if (!watchedSaved && isPlaying && lastTimeupdateAt > 0 &&
+                Date.now() - lastTimeupdateAt > 3000 && lastSaved > 5) {
+                isPlaying = false;
+                onVideoEnded();
+            }
+        }, 1000);
+    }
+
+    /* ═══════════════════════════════════════════
+       YOUTUBE FALLBACK
+    ═══════════════════════════════════════════ */
+    if (!IS_BUNNY) {
+        const s = document.createElement('script');
+        s.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(s);
+
+        window.onYouTubeIframeAPIReady = function() {
+            const init = () => {
+                const iframe = document.getElementById('videoPlayer');
+                if (!iframe.src) { setTimeout(init, 300); return; }
+                window._ytPlayer = new YT.Player('videoPlayer', {
+                    events: {
+                        onReady(e) {
+                            try { duration = e.target.getDuration(); } catch(_){}
+                            if (!document.getElementById('resumeDialog') && SAVED_POS > 5)
+                                e.target.seekTo(SAVED_POS, true);
+                        },
+                        onStateChange(e) {
+                            try { const d = window._ytPlayer.getDuration(); if(d>0) duration=d; } catch(_){}
+                            if (e.data === YT.PlayerState.PLAYING) {
+                                clearInterval(saveTimer);
+                                saveTimer = setInterval(saveProgress, 5000);
+                            } else {
+                                clearInterval(saveTimer);
+                                if (e.data === YT.PlayerState.ENDED) onVideoEnded();
+                                else saveProgress();
+                            }
+                        }
+                    }
+                });
+            };
+            init();
+        };
+    }
+
+    /* ── Sahifa yopilganda ── */
+    window.addEventListener('beforeunload', () => saveProgress());
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') saveProgress();
+    });
+</script>
+{% endblock %}

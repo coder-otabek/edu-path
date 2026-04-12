@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Video darslar{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-center justify-between mb-16">
+  <div>
+    <h1 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;">
+      🎬 <span data-i18n="videos_title">Video darslar</span>
+    </h1>
+    <p style="font-size:.825rem;color:var(--text-muted);margin-top:2px;"
+       data-i18n="videos_subtitle">Bilimlaringizni mustahkamlang</p>
+  </div>
+</div>
+
+{% if video_list %}
+  <div style="display:flex;flex-direction:column;gap:12px;">
+
+    {# video_list = [(video, prog), ...] — views.py dan keladi #}
+    {% for video, prog in video_list %}
+
+      {% if video.id in unlocked_ids %}
+
+        {# ── OCHIQ VIDEO ── #}
+        <a href="{% url 'core:video_detail' video.pk %}"
+           style="text-decoration:none;color:inherit;">
+          <div class="card" style="padding:0;overflow:hidden;display:flex;gap:0;">
+
+            {# Thumbnail #}
+            <div style="position:relative;width:120px;min-width:120px;height:80px;flex-shrink:0;">
+              {% if video.get_thumbnail %}
+                <img src="{{ video.get_thumbnail }}" alt="{{ video.title }}"
+                     style="width:100%;height:100%;object-fit:cover;"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                <div style="width:100%;height:100%;background:var(--surface-2);display:none;
+                            align-items:center;justify-content:center;font-size:2rem;">🎬</div>
+              {% else %}
+                <div style="width:100%;height:100%;background:var(--surface-2);
+                            display:flex;align-items:center;justify-content:center;font-size:2rem;">🎬</div>
+              {% endif %}
+
+              {# Play overlay #}
+              <div style="position:absolute;inset:0;display:flex;align-items:center;
+                          justify-content:center;background:rgba(0,0,0,.25);">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--primary);
+                            display:flex;align-items:center;justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+              </div>
+
+              {# Ko'rildi badge #}
+              {% if prog.watched %}
+                <div style="position:absolute;top:4px;right:4px;
+                            background:var(--success,#22c55e);border-radius:100px;
+                            width:18px;height:18px;
+                            display:flex;align-items:center;justify-content:center;">
+                  <svg width="10" height="10" fill="white" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                  </svg>
+                </div>
+              {% endif %}
+            </div>
+
+            {# Info #}
+            <div style="padding:10px 12px;flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:.875rem;margin-bottom:4px;
+                          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                {{ forloop.counter }}. {{ video.title }}
+              </div>
+              {% if video.description %}
+                <div style="font-size:.75rem;color:var(--text-muted);line-height:1.4;
+                            display:-webkit-box;-webkit-line-clamp:2;
+                            -webkit-box-orient:vertical;overflow:hidden;">
+                  {{ video.description }}
+                </div>
+              {% endif %}
+
+              {# Status #}
+              {% if prog.watched %}
+                <div style="margin-top:6px;font-size:.7rem;
+                            color:var(--success,#22c55e);font-weight:600;"
+                     data-i18n="video_watched">✓ Ko'rildi</div>
+              {% elif prog.position > 3 %}
+                <div style="margin-top:6px;font-size:.7rem;color:var(--text-muted);">
+                  ▶ Davom etish
+                </div>
+              {% endif %}
+            </div>
+
+          </div>
+        </a>
+
+      {% else %}
+
+        {# ── QULFLI VIDEO ── #}
+        <div class="card" style="padding:0;overflow:hidden;display:flex;gap:0;opacity:.6;">
+          <div style="position:relative;width:120px;min-width:120px;height:80px;flex-shrink:0;">
+            {% if video.get_thumbnail %}
+              <img src="{{ video.get_thumbnail }}" alt="{{ video.title }}"
+                   style="width:100%;height:100%;object-fit:cover;filter:blur(3px);"
+                   onerror="this.style.display='none';">
+            {% else %}
+              <div style="width:100%;height:100%;background:var(--surface-2);"></div>
+            {% endif %}
+            <div style="position:absolute;inset:0;display:flex;align-items:center;
+                        justify-content:center;background:rgba(0,0,0,.5);">
+              <svg width="24" height="24" fill="white" viewBox="0 0 24 24">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10
+                         c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2
+                         s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1
+                         1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+            </div>
+          </div>
+          <div style="padding:10px 12px;flex:1;min-width:0;
+                      display:flex;flex-direction:column;justify-content:center;">
+            <div style="font-weight:600;font-size:.875rem;margin-bottom:4px;
+                        color:var(--text-muted);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ forloop.counter }}. {{ video.title }}
+            </div>
+            <div style="font-size:.75rem;color:var(--text-muted);"
+                 data-i18n="video_locked">Oldingi videoni ko'ring</div>
+          </div>
+        </div>
+
+      {% endif %}
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="card text-center" style="padding:48px 24px;">
+    <div style="font-size:3rem;margin-bottom:16px;">🎬</div>
+    <h3 style="font-weight:700;margin-bottom:8px;"
+        data-i18n="videos_empty">Video darslar hali qo'shilmagan</h3>
+    <p style="font-size:.875rem;color:var(--text-secondary);"
+       data-i18n="videos_empty_desc">Tez orada qo'shiladi!</p>
+  </div>
+{% endif %}
+
+{% endblock %}

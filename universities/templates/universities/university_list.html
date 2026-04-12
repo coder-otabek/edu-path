@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Universitetlar{% endblock %}
+
+{% block content %}
+<div class="page-universities">
+
+  {# ── Sarlavha + filtr tab ── #}
+  <div class="unis-header">
+    <div class="unis-header__left">
+      <h1 class="unis-header__title" data-i18n="unis_page_title">🎓 Universitetlar</h1>
+      <p class="unis-header__sub" data-i18n="unis_page_sub">Grant olish imkoniyati mavjud universitetlarni toping</p>
+    </div>
+  </div>
+
+  {# ── Grant turi tab ── #}
+  <div class="unis-tabs">
+    <a href="?type=&q={{ search }}"
+       class="unis-tab {% if not grant_type %}unis-tab--active{% endif %}">
+      <span data-i18n="unis_tab_all">🌐 Barchasi</span>
+    </a>
+    <a href="?type=foreign&q={{ search }}"
+       class="unis-tab unis-tab--foreign {% if grant_type == 'foreign' %}unis-tab--active{% endif %}">
+      <span data-i18n="unis_tab_foreign">✈️ Xorijiy grantlar</span>
+    </a>
+    <a href="?type=local&q={{ search }}"
+       class="unis-tab unis-tab--local {% if grant_type == 'local' %}unis-tab--active{% endif %}">
+      <span data-i18n="unis_tab_local">🏛️ Mahalliy grantlar</span>
+    </a>
+  </div>
+
+
+
+  {# ── Natija soni ── #}
+  <p class="unis-count">
+    <strong>{{ universities.count }}</strong> <span data-i18n="unis_count_found">ta universitet topildi</span>
+  </p>
+
+  {# ── Kartalar ── #}
+  {% if universities %}
+    <div class="unis-grid">
+      {% for uni in universities %}
+        <a href="{{ uni.get_absolute_url }}" class="uni-card">
+          <div class="uni-card__cover">
+            {% if uni.cover_image %}
+              <img src="{{ uni.cover_image.url }}" alt="{{ uni.name }}" class="uni-card__cover-img">
+            {% else %}
+              <div class="uni-card__cover-placeholder">
+                {% if uni.grant_type == 'foreign' %}✈️{% elif uni.grant_type == 'local' %}🏛️{% else %}🎓{% endif %}
+              </div>
+            {% endif %}
+            <span class="uni-card__badge uni-card__badge--{{ uni.grant_type }}">
+              {% if uni.grant_type == 'foreign' %}<span data-i18n="unis_badge_foreign">Xorijiy</span>{% elif uni.grant_type == 'local' %}<span data-i18n="unis_badge_local">Mahalliy</span>{% else %}<span data-i18n="grant_type_both">Xorijiy va Mahalliy</span>{% endif %}
+            </span>
+          </div>
+
+          <div class="uni-card__body">
+            <div class="uni-card__top">
+              {% if uni.logo %}
+                <img src="{{ uni.logo.url }}" alt="" class="uni-card__logo">
+              {% else %}
+                <div class="uni-card__logo-placeholder">🎓</div>
+              {% endif %}
+              <div>
+                <h3 class="uni-card__name">{{ uni.name }}</h3>
+                <p class="uni-card__location">
+                  📍 {{ uni.city }}{% if uni.city and uni.get_country_display %}, {% endif %}{{ uni.get_country_display }}
+                </p>
+              </div>
+            </div>
+
+            {% if uni.description %}
+              <p class="uni-card__desc">{{ uni.description|truncatechars:110 }}</p>
+            {% endif %}
+
+            <div class="uni-card__meta">
+              {% if uni.min_ielts_score %}
+                <span class="uni-card__chip">IELTS {{ uni.min_ielts_score }}+</span>
+              {% endif %}
+              {% if uni.min_gpa %}
+                <span class="uni-card__chip">GPA {{ uni.min_gpa }}+</span>
+              {% endif %}
+              {% if uni.tuition_fee_min %}
+                <span class="uni-card__chip">💰 ${{ uni.tuition_fee_min }}/yil</span>
+              {% endif %}
+            </div>
+
+            <div class="uni-card__footer">
+              <span class="uni-card__grants">
+                🏆 {{ uni.grant_count }} <span data-i18n="unis_card_grants">ta grant</span>
+              </span>
+              {% if uni.website %}
+                <span class="uni-card__site" data-i18n="unis_card_site">🌐 rasmiy sayt</span>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="unis-empty">
+      <div class="unis-empty__icon">🔍</div>
+      <p class="unis-empty__text" data-i18n="unis_empty_text">Hech narsa topilmadi</p>
+      <a href="?type={{ grant_type }}" class="btn btn--ghost"><span data-i18n="unis_filter_clear">Filterni tozalash</span></a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+/* ── Page layout ── */
+.page-universities {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+/* ── Header ── */
+.unis-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.unis-header__title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--text-primary);
+}
+.unis-header__sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: .95rem;
+}
+
+/* ── Tabs ── */
+.unis-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.unis-tab {
+  padding: 9px 20px;
+  border-radius: 24px;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: .9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all .2s;
+}
+.unis-tab:hover { border-color: var(--accent); color: var(--accent); }
+.unis-tab--active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.unis-tab--foreign.unis-tab--active { background: #3b82f6; border-color: #3b82f6; }
+.unis-tab--local.unis-tab--active   { background: #10b981; border-color: #10b981; }
+
+/* ── Search bar ── */
+.unis-search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.unis-search-bar__input-wrap {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+.unis-search-bar__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+}
+.unis-search-bar__input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: .95rem;
+  box-sizing: border-box;
+}
+.unis-search-bar__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.unis-search-bar__select {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: .9rem;
+  min-width: 160px;
+}
+
+/* ── Count ── */
+.unis-count {
+  color: var(--text-muted);
+  font-size: .9rem;
+  margin-bottom: 20px;
+}
+
+/* ── Grid ── */
+.unis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* ── Card ── */
+.uni-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.uni-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  border-color: var(--accent);
+}
+
+/* Cover */
+.uni-card__cover {
+  position: relative;
+  height: 140px;
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-card) 100%);
+  overflow: hidden;
+}
+.uni-card__cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.uni-card__cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 3rem;
+  opacity: .4;
+}
+.uni-card__badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.uni-card__badge--foreign { background: rgba(59,130,246,.85); color: #fff; }
+.uni-card__badge--local   { background: rgba(16,185,129,.85); color: #fff; }
+.uni-card__badge--both    { background: rgba(124,58,237,.85); color: #fff; }
+
+/* Body */
+.uni-card__body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.uni-card__top  { display: flex; align-items: center; gap: 12px; }
+.uni-card__logo { width: 44px; height: 44px; border-radius: 10px; object-fit: contain; border: 1px solid var(--border-color); }
+.uni-card__logo-placeholder {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--accent-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; flex-shrink: 0;
+}
+.uni-card__name     { font-size: 1rem; font-weight: 600; margin: 0; color: var(--text-primary); }
+.uni-card__location { font-size: .8rem; color: var(--text-muted); margin: 2px 0 0; }
+.uni-card__desc     { font-size: .85rem; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+
+/* Meta chips */
+.uni-card__meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.uni-card__chip {
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: .75rem;
+  font-weight: 500;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Footer */
+.uni-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+  font-size: .82rem;
+}
+.uni-card__grants { color: var(--accent); font-weight: 600; }
+.uni-card__site   { color: var(--text-muted); }
+
+/* Empty */
+.unis-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.unis-empty__icon { font-size: 3rem; margin-bottom: 12px; }
+.unis-empty__text { font-size: 1.1rem; margin-bottom: 16px; }
+
+/* AI button */
+.btn--ai {
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: .9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity .2s;
+}
+.btn--ai:hover { opacity: .88; color: #fff; }
+
+@media (max-width: 600px) {
+  .unis-grid { grid-template-columns: 1fr; }
+  .unis-header { flex-direction: column; }
+}
+</style>
+{% endblock %}

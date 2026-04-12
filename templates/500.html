@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>500 — Server xatosi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Sora',sans-serif;background:#F8FAFF;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}
+    .wrap{max-width:360px}
+    .num{font-size:6rem;font-weight:800;background:linear-gradient(135deg,#EF4444,#F59E0B);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-bottom:12px}
+    h1{font-size:1.3rem;font-weight:700;color:#0F172A;margin-bottom:8px}
+    p{font-size:.875rem;color:#475569;line-height:1.7;margin-bottom:24px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#2563EB;color:#fff;border-radius:10px;font-family:'Sora',sans-serif;font-weight:600;font-size:.875rem;text-decoration:none;transition:.2s}
+    .btn:hover{background:#1D4ED8}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="num">500</div>
+    <h1>Server xatosi</h1>
+    <p>Nimadir noto'g'ri ketdi. Jamoamiz bu haqda xabardor. Biroz kutib qayta urinib ko'ring.</p>
+    <a href="/" class="btn">← Bosh sahifaga qaytish</a>
+  </div>
+<script>
+(function(){
+  const lang = localStorage.getItem('edupath_lang') || 'uz';
+  const T = {
+    uz: { title: 'Server xatosi', desc: 'Nimadir noto'g'ri ketdi. Jamoamiz bu haqda xabardor. Biroz kutib qayta urinib ko'ring.', btn: '← Bosh sahifaga qaytish' },
+    ru: { title: 'Ошибка сервера', desc: 'Что-то пошло не так. Наша команда уже в курсе. Попробуйте снова через некоторое время.', btn: '← На главную' },
+    en: { title: 'Server error', desc: 'Something went wrong. Our team has been notified. Please try again later.', btn: '← Back to home' },
+  };
+  const t = T[lang] || T.uz;
+  const h1 = document.querySelector('h1');
+  const p  = document.querySelector('p');
+  const a  = document.querySelector('.btn');
+  if(h1) h1.textContent = t.title;
+  if(p)  p.textContent  = t.desc;
+  if(a)  a.textContent  = t.btn;
+})();
+</script>
+</body>
+</html>

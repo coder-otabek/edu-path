@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Liderlar taxtasi{% endblock %}
+
+{% block content %}
+
+  <h1 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:4px;"><span data-i18n="leaderboard_title">🏆 Liderlar taxtasi</span></h1>
+  <p style="font-size:.825rem;color:var(--text-muted);margin-bottom:20px;"><span data-i18n="leaderboard_desc">Eng yuqori ballli foydalanuvchilar</span></p>
+
+  {% if top_users %}
+    {# Top 3 #}
+    {% if top_users|length >= 3 %}
+      <div style="display:flex;align-items:flex-end;justify-content:center;gap:12px;margin-bottom:24px;padding:0 8px;">
+        {# 2nd place #}
+        <div style="flex:1;text-align:center;">
+          <div style="width:52px;height:52px;border-radius:50%;background:var(--surface-2);border:2px solid #94A3B8;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-family:var(--font-display);font-weight:700;color:var(--text-secondary);font-size:1rem;">
+            {% if top_users.1.avatar %}<img src="{{ top_users.1.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">{% else %}{{ top_users.1.user.first_name|first|upper }}{{ top_users.1.user.last_name|first|upper }}{% endif %}
+          </div>
+          <div style="font-size:.75rem;font-weight:600;">{{ top_users.1.user.get_full_name|truncatechars:12 }}</div>
+          <div style="font-size:.7rem;color:var(--text-muted);">{{ top_users.1.gpa|default:"—" }}</div>
+          <div style="background:#94A3B8;border-radius:8px 8px 0 0;height:60px;display:flex;align-items:center;justify-content:center;margin-top:8px;">
+            <span style="font-family:var(--font-display);font-size:1.4rem;font-weight:800;color:#fff;">2</span>
+          </div>
+        </div>
+        {# 1st place #}
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:1.5rem;margin-bottom:4px;">👑</div>
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));border:3px solid #F59E0B;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-family:var(--font-display);font-weight:700;color:#fff;font-size:1.1rem;">
+            {% if top_users.0.avatar %}<img src="{{ top_users.0.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">{% else %}{{ top_users.0.user.first_name|first|upper }}{{ top_users.0.user.last_name|first|upper }}{% endif %}
+          </div>
+          <div style="font-size:.8rem;font-weight:700;">{{ top_users.0.user.get_full_name|truncatechars:12 }}</div>
+          <div style="font-size:.72rem;color:var(--text-muted);">{{ top_users.0.gpa|default:"—" }}</div>
+          <div style="background:linear-gradient(135deg,#F59E0B,#FBBF24);border-radius:8px 8px 0 0;height:80px;display:flex;align-items:center;justify-content:center;margin-top:8px;">
+            <span style="font-family:var(--font-display);font-size:1.8rem;font-weight:800;color:#fff;">1</span>
+          </div>
+        </div>
+        {# 3rd place #}
+        <div style="flex:1;text-align:center;">
+          <div style="width:52px;height:52px;border-radius:50%;background:var(--surface-2);border:2px solid #CD7C2F;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-family:var(--font-display);font-weight:700;color:#CD7C2F;font-size:1rem;">
+            {% if top_users.2.avatar %}<img src="{{ top_users.2.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">{% else %}{{ top_users.2.user.first_name|first|upper }}{{ top_users.2.user.last_name|first|upper }}{% endif %}
+          </div>
+          <div style="font-size:.75rem;font-weight:600;">{{ top_users.2.user.get_full_name|truncatechars:12 }}</div>
+          <div style="font-size:.7rem;color:var(--text-muted);">{{ top_users.2.gpa|default:"—" }}</div>
+          <div style="background:#CD7C2F;border-radius:8px 8px 0 0;height:48px;display:flex;align-items:center;justify-content:center;margin-top:8px;">
+            <span style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;color:#fff;">3</span>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# Full list #}
+    <div class="card">
+      {% for profile in top_users %}
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;{% if not forloop.last %}border-bottom:1px solid var(--border);{% endif %}">
+          <span style="font-family:var(--font-display);font-weight:800;font-size:.9rem;color:{% if forloop.counter == 1 %}#F59E0B{% elif forloop.counter == 2 %}#94A3B8{% elif forloop.counter == 3 %}#CD7C2F{% else %}var(--text-muted){% endif %};min-width:28px;text-align:center;">
+            {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
+          </span>
+          <div style="width:38px;height:38px;border-radius:50%;background:{% if forloop.counter <= 3 %}linear-gradient(135deg,var(--primary),var(--accent)){% else %}var(--surface-2){% endif %};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:{% if forloop.counter <= 3 %}#fff{% else %}var(--primary){% endif %};">
+            {% if profile.avatar %}<img src="{{ profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">{% else %}{{ profile.user.first_name|first|upper }}{{ profile.user.last_name|first|upper }}{% endif %}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:.875rem;">{{ profile.user.get_full_name }}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);">{{ profile.desired_specialty|default:"Yo'nalish ko'rsatilmagan"|truncatechars:30 }}</div>
+          </div>
+          <div style="text-align:right;">
+            {% if profile.gpa %}
+              <div style="font-family:var(--font-display);font-weight:700;color:var(--primary);font-size:.95rem;">{{ profile.gpa }}</div>
+              <div style="font-size:.65rem;color:var(--text-muted);">GPA</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {# User's own rank #}
+    {% if request.user.profile %}
+      <div class="alert alert-info mt-16">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span data-i18n="leaderboard_hint">Reytingda ko'rinish uchun profilingizni to'ldiring</span>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+      <h3 class="empty-state-title" data-i18n="leaderboard_empty">Hali kimsa yo'q</h3>
+      <p class="empty-state-desc"><span data-i18n="leaderboard_empty_desc">Profilingizni to'ldirib, birinchi bo'ling!</span></p>
+    </div>
+  {% endif %}
+
+{% endblock %}

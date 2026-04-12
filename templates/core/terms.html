@@ -1,0 +1,20 @@
+{% extends "auth_base.html" %}
+{% block title %}Foydalanish shartlari{% endblock %}
+{% block hero_title %}Foydalanish shartlari{% endblock %}
+{% block hero_sub %}Iltimos, diqqat bilan o'qing{% endblock %}
+
+{% block content %}
+  <h2 class="auth-title">Foydalanish shartlari</h2>
+  <div style="font-size:.875rem;color:var(--text-secondary);line-height:1.8;">
+    <p style="margin-bottom:12px;">EduPath platformasidan foydalanish quyidagi shartlarni qabul qilishni anglatadi.</p>
+    <h3 style="font-weight:700;color:var(--text-primary);margin:16px 0 8px;">1. Xizmatdan foydalanish</h3>
+    <p style="margin-bottom:12px;">EduPath faqat ta'lim maqsadlarida foydalanish uchun mo'ljallangan. Noto'g'ri ma'lumot kiritish taqiqlanadi.</p>
+    <h3 style="font-weight:700;color:var(--text-primary);margin:16px 0 8px;">2. Maxfiylik</h3>
+    <p style="margin-bottom:12px;">Sizning shaxsiy ma'lumotlaringiz uchinchi shaxslarga berilmaydi. Batafsil ma'lumot uchun <a href="{% url 'core:privacy' %}" style="color:var(--primary);">Maxfiylik siyosati</a>ni o'qing.</p>
+    <h3 style="font-weight:700;color:var(--text-primary);margin:16px 0 8px;">3. AI tavsiyalari</h3>
+    <p style="margin-bottom:12px;">AI tomonidan berilgan tavsiyalar ma'lumot maqsadida bo'lib, yakuniy qaror sizga bog'liq.</p>
+    <h3 style="font-weight:700;color:var(--text-primary);margin:16px 0 8px;">4. Hisob</h3>
+    <p>Hisobingiz xavfsizligi uchun parolingizni hech kim bilan baham ko'rmang.</p>
+  </div>
+  <p class="auth-footer mt-16"><a href="{% url 'accounts:register' %}">← Orqaga</a></p>
+{% endblock %}

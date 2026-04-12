@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="{{ user.language|default:'uz' }}" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2563EB">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    {# ---- Dynamic SEO ---- #}
+    <title>{% block title %}{{ site.name }}{% endblock %} — {{ site.tagline }}</title>
+    <meta name="description" content="{% block meta_description %}{{ site.meta_description }}{% endblock %}">
+
+    {% load static %}
+    {# ---- Favicon ---- #}
+    {% if site.favicon %}
+        <link rel="icon" type="image/png" href="{{ site.favicon.url }}">
+        <link rel="apple-touch-icon" href="{{ site.favicon.url }}">
+    {% else %}
+        <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    {% endif %}
+
+    {# ---- PWA Manifest ---- #}
+    <link rel="manifest" href="/manifest.json">
+
+    {# ---- Fonts ---- #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap"
+          rel="stylesheet">
+
+    {# ---- Main CSS ---- #}
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}" data-gender="{{ user.gender|default:'male' }}"
+      data-theme="{{ user.theme|default:'light' }}">
+<nav class="navbar" role="navigation" aria-label="Asosiy navigatsiya">
+
+    {# Hamburger #}
+    <button class="nav-hamburger" id="hamburger" aria-label="Menyu" aria-expanded="false" aria-controls="drawer">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    {# Brand — Logo + Sayt nomi #}
+    <a href="/" class="nav-brand" aria-label="{{ site.name }} bosh sahifasi">
+        {% if site.logo %}
+            <img src="{{ site.logo.url }}" alt="{{ site.name }} logotipi" width="36" height="36">
+        {% else %}
+            <img src="{% static 'img/logo.png' %}" alt="{{ site.name }} logotipi" width="36" height="36">
+        {% endif %}
+        <span class="nav-brand-name">{{ site.name|default:"EduPath" }}</span>
+    </a>
+
+    {# Greeting #}
+    {% if user.is_authenticated %}
+        <div class="nav-greeting">
+            <span><span data-i18n="nav_hi">Salom</span>,&nbsp;<strong>{{ user.first_name|default:user.email|truncatechars:12 }}</strong></span>
+            <a href="{% url 'accounts:profile' %}" class="nav-avatar" aria-label="Profil">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.first_name }}">
+                {% else %}
+                    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                {% endif %}
+            </a>
+        </div>
+    {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-sm">Kirish</a>
+    {% endif %}
+
+</nav>
+<div class="drawer-overlay" id="drawerOverlay" role="presentation"></div>
+
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Yon menyu">
+
+    {# Drawer Header #}
+    <div class="drawer-header">
+        <a href="/" class="nav-brand" style="text-decoration:none">
+            {% if site.logo %}
+                <img src="{{ site.logo.url }}" alt="{{ site.name }}">
+            {% else %}
+                <img src="{% static 'img/logo.png' %}" alt="{{ site.name }}">
+            {% endif %}
+        </a>
+        <div>
+            <div class="drawer-header-title">{{ site.name|default:"EduPath" }}</div>
+            <div class="drawer-header-sub">{{ site.tagline|default:"Kelajagingni rejalashtir" }}</div>
+        </div>
+    </div>
+
+    {# Drawer Nav — Admin paneldan boshqariladi #}
+    <nav class="drawer-nav" aria-label="Yon menyu navigatsiyasi">
+        {% if user.is_authenticated %}
+            {# Asosiy linklar #}
+            <a href="{% url 'dashboard:home' %}"
+               {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span data-i18n="drawer_home">Bosh sahifa</span>
+            </a>
+
+            <a href="{% url 'accounts:profile' %}"
+               {% if request.resolver_match.url_name == 'profile' %}class="active"{% endif %}>
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                <span data-i18n="drawer_profile">Profilim</span>
+            </a>
+
+            <a href="{% url 'universities:list' %}"
+               {% if request.resolver_match.url_name == 'list' %}class="active"{% endif %}>
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span data-i18n="drawer_universities">Universitetlar</span>
+            </a>
+
+            <a href="{% url 'ai_engine:roadmap' %}"
+               {% if request.resolver_match.url_name == 'roadmap' %}class="active"{% endif %}>
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+                <span data-i18n="drawer_roadmap">Road Map</span>
+            </a>
+
+            <a href="{% url 'ai_engine:chat' %}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                <span data-i18n="drawer_ai">AI Maslahat</span>
+            </a>
+
+            <div class="drawer-divider"></div>
+
+            {# Dinamik qo'shimcha linklar — admin paneldan #}
+            {% for item in drawer_extra_links %}
+                <a href="{{ item.url }}" {% if item.open_new_tab %}target="_blank" rel="noopener"{% endif %}>
+                    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    {{ item.name }}
+                </a>
+            {% endfor %}
+
+            <div class="drawer-divider"></div>
+
+            {# ---- Kun/Tun rejimi ---- #}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+                <div style="display:flex;align-items:center;gap:12px;color:var(--text-secondary);font-size:.9rem;font-weight:500;">
+                    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                    <span id="themeLabel"
+                          data-i18n="{% if user.theme == 'dark' %}drawer_dark{% else %}drawer_light{% endif %}">{% if user.theme == 'dark' %}
+                        Tungi rejim{% else %}Kunduzgi rejim{% endif %}</span>
+                </div>
+                <button id="themeToggle" onclick="toggleTheme()"
+                        style="width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:.3s;background:{% if user.theme == 'dark' %}var(--primary){% else %}var(--border-2){% endif %};">
+                    <span style="position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.3s;{% if user.theme == 'dark' %}left:22px{% else %}left:2px{% endif %};"></span>
+                </button>
+            </div>
+
+            {# ---- Til tanlash ---- #}
+            <div style="padding:8px 20px 12px;">
+                <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:8px;font-weight:600;"
+                     data-i18n="drawer_lang">TIL / ЯЗЫК / LANGUAGE
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button onclick="setLang('uz')"
+                            class="lang-btn {% if user.language == 'uz' or not user.language %}active{% endif %}"
+                            data-lang="uz"
+                            style="flex:1;padding:7px;border-radius:8px;border:1.5px solid {% if user.language == 'uz' or not user.language %}var(--primary){% else %}var(--border){% endif %};background:{% if user.language == 'uz' or not user.language %}var(--primary-light){% else %}transparent{% endif %};font-size:.8rem;font-weight:600;cursor:pointer;color:{% if user.language == 'uz' or not user.language %}var(--primary){% else %}var(--text-secondary){% endif %};">
+                        🇺🇿 UZ
+                    </button>
+                    <button onclick="setLang('ru')" class="lang-btn {% if user.language == 'ru' %}active{% endif %}"
+                            data-lang="ru"
+                            style="flex:1;padding:7px;border-radius:8px;border:1.5px solid {% if user.language == 'ru' %}var(--primary){% else %}var(--border){% endif %};background:{% if user.language == 'ru' %}var(--primary-light){% else %}transparent{% endif %};font-size:.8rem;font-weight:600;cursor:pointer;color:{% if user.language == 'ru' %}var(--primary){% else %}var(--text-secondary){% endif %};">
+                        🇷🇺 RU
+                    </button>
+                    <button onclick="setLang('en')" class="lang-btn {% if user.language == 'en' %}active{% endif %}"
+                            data-lang="en"
+                            style="flex:1;padding:7px;border-radius:8px;border:1.5px solid {% if user.language == 'en' %}var(--primary){% else %}var(--border){% endif %};background:{% if user.language == 'en' %}var(--primary-light){% else %}transparent{% endif %};font-size:.8rem;font-weight:600;cursor:pointer;color:{% if user.language == 'en' %}var(--primary){% else %}var(--text-secondary){% endif %};">
+                        🇬🇧 EN
+                    </button>
+                </div>
+            </div>
+
+            <div class="drawer-divider"></div>
+
+            <a href="{% url 'accounts:settings' %}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span data-i18n="drawer_settings">Sozlamalar</span>
+            </a>
+
+        {% else %}
+            <a href="{% url 'accounts:login' %}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                </svg>
+                Kirish
+            </a>
+            <a href="{% url 'accounts:register' %}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                Ro'yxatdan o'tish
+            </a>
+        {% endif %}
+    </nav>
+
+    {# Logout #}
+    {% if user.is_authenticated %}
+        <div class="drawer-footer">
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="drawer-logout">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    <span data-i18n="drawer_logout">Chiqish</span>
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+</aside>
+{% if messages %}
+    <div class="toast-container" id="toastContainer">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} mb-0" data-autohide role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="toast-container" id="toastContainer"></div>
+{% endif %}
+<main class="main-content" id="main" role="main">
+    {% block content %}{% endblock %}
+</main>
+<nav class="bottom-nav" role="navigation" aria-label="Pastki navigatsiya">
+
+    {# Asosiy (Home) #}
+    <a href="{% url 'dashboard:home' %}"
+       class="bottom-nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+       aria-label="Bosh sahifa">
+        <div class="bnav-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+        </div>
+        <span class="bnav-label" data-i18n="nav_main">Asosiy</span>
+    </a>
+
+    {# Mahalliy Grantlar #}
+    <a href="{% url 'universities:grants' %}"
+       class="bottom-nav-item {% if request.resolver_match.url_name == 'grants' %}active{% endif %}"
+       aria-label="Mahalliy grantlar">
+        <div class="bnav-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <span class="bnav-label" data-i18n="nav_grants">Grantlar</span>
+    </a>
+
+    {# Volontyorlik #}
+    <a href="{% url 'dashboard:volunteer' %}"
+       class="bottom-nav-item {% if request.resolver_match.url_name == 'volunteer' or request.resolver_match.url_name == 'volunteer_add' %}active{% endif %}"
+       aria-label="Volontyorlik">
+        <div class="bnav-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+        </div>
+        <span class="bnav-label" data-i18n="nav_volunteer">Volontyor</span>
+    </a>
+
+    {# Essay & Testlar #}
+    <a href="{% url 'dashboard:essays' %}"
+       class="bottom-nav-item {% if request.resolver_match.url_name == 'essays' or request.resolver_match.url_name == 'essay_write' or request.resolver_match.url_name == 'essay_detail' %}active{% endif %}"
+       aria-label="Essay va testlar">
+        <div class="bnav-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+        </div>
+        <span class="bnav-label" data-i18n="nav_essay">Essay</span>
+    </a>
+
+    {# Universitetlar #}
+    <a href="{% url 'universities:list' %}"
+       class="bottom-nav-item {% if request.resolver_match.url_name == 'list' %}active{% endif %}"
+       aria-label="Universitetlar">
+        <div class="bnav-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+        </div>
+        <span class="bnav-label" data-i18n="nav_uni">Uni</span>
+    </a>
+
+    {# Video darslar #}
+    <a href="{% url 'core:videos' %}"
+       class="bottom-nav-item {% if request.resolver_match.url_name == 'videos' or request.resolver_match.url_name == 'video_detail' %}active{% endif %}"
+       aria-label="Video darslar">
+        <div class="bnav-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <span class="bnav-label" data-i18n="nav_videos">Video</span>
+    </a>
+
+    {# Liderboard #}
+    <a href="{% url 'dashboard:leaderboard' %}"
+       class="bottom-nav-item {% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}"
+       aria-label="Liderlar taxtasi">
+        <div class="bnav-icon-wrap">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+        </div>
+        <span class="bnav-label" data-i18n="nav_top">Top</span>
+    </a>
+
+</nav>
+{% if user.is_authenticated and request.resolver_match.url_name != 'chat' %}
+    <button class="ai-fab" id="aiFab" data-href="{% url 'ai_engine:chat' %}" aria-label="AI bilan suhbat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        <span class="ai-fab-tooltip">AI maslahat</span>
+    </button>
+{% endif %}
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+    // ---- Tema o'zgartirish ----
+    function toggleTheme() {
+        const body = document.body;
+        const current = body.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyThemeUI(next);
+
+        // Faqat shu sessiyada saqlash — ilova yopilsa tozalanadi
+        sessionStorage.setItem('edupath_session_theme', next);
+
+        // Serverga saqlash (akkauntda ham saqlansin)
+        fetch('/accounts/settings/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: 'action=theme&theme=' + next
+        });
+    }
+
+    function applyThemeUI(theme) {
+        document.body.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+        const toggle = document.getElementById('themeToggle');
+        const label = document.getElementById('themeLabel');
+        if (!toggle) return;
+        const knob = toggle.querySelector('span');
+        if (theme === 'dark') {
+            toggle.style.background = 'var(--primary)';
+            knob.style.left = '22px';
+            if (label) {
+                label.setAttribute('data-i18n', 'drawer_dark');
+                label.textContent = 'Tungi rejim';
+            }
+        } else {
+            toggle.style.background = 'var(--border-2)';
+            knob.style.left = '2px';
+            if (label) {
+                label.setAttribute('data-i18n', 'drawer_light');
+                label.textContent = 'Kunduzgi rejim';
+            }
+        }
+    }
+
+    // ---- Til o'zgartirish ----
+    // setLang — translations.js da
+
+    // =============================================
+    // TEMA, GENDER, TIL — sahifa yuklanganda
+    // =============================================
+    (function () {
+        // --- TEMA ---
+        // Qoidalar:
+        // 1. Har kirganida tizim mavzusiga moslashsin (sessionStorage yo'q)
+        // 2. O'SHA SESSIYADA user toggle bossa — uning tanlovi ishlaydi
+        // 3. Browser/ilova yopilsa — yana tizimga qaytadi
+
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const sessionTheme = sessionStorage.getItem('edupath_session_theme'); // faqat shu sessiyada
+
+        let theme;
+        if (sessionTheme) {
+            // Shu sessiyada user tanlagan — shuni ishlat
+            theme = sessionTheme;
+        } else {
+            // Yangi sessiya — tizimga moslashtir
+            theme = systemDark ? 'dark' : 'light';
+        }
+
+        applyThemeUI(theme);
+
+        // Tizim mavzusi o'zgarganda — agar user bu sessiyada tanlamagan bo'lsa
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!sessionStorage.getItem('edupath_session_theme')) {
+                applyThemeUI(e.matches ? 'dark' : 'light');
+            }
+        });
+
+        // --- GENDER ---
+        const serverGender = document.body.getAttribute('data-gender') || 'male';
+        document.body.setAttribute('data-gender', serverGender);
+        document.documentElement.setAttribute('data-gender', serverGender);
+        localStorage.setItem('edupath_gender', serverGender);
+
+        // --- TIL ---
+        const serverLang = document.documentElement.getAttribute('lang') || 'uz';
+        const savedLang = localStorage.getItem('edupath_lang') || serverLang;
+        document.documentElement.setAttribute('lang', savedLang);
+        localStorage.setItem('edupath_lang', savedLang);
+    })();
+</script>
+<script src="{% static 'js/translations.js' %}"></script>
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>
