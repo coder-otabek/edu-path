@@ -3,7 +3,6 @@ from django.db import models
 from django.utils.text import slugify
 import uuid
 
-
 # ─── Choices ────────────────────────────────────────────────
 GRANT_TYPE_CHOICES = [
     ('foreign', 'Xorijiy grant'),
@@ -140,11 +139,6 @@ class Grant(models.Model):
             self.slug = slug
         super().save(*args, **kwargs)
 
-    def get_absolute_url(self):
-        from django.urls import reverse
-        return reverse('universities:grant_detail',
-                       kwargs={'uni_slug': self.university.slug, 'grant_id': self.pk})
-
 
 # ─── Grant Video (Universitet granti uchun) ──────────────────
 def grant_video_upload_path(instance, filename):
@@ -173,77 +167,28 @@ class GrantVideo(models.Model):
         ordering            = ['grant', 'order']
 
     def __str__(self):
-        try:
-            return f"{self.video.grant.name} | {self.video.title} — {self.title}"
-        except Exception:
-            return self.title
-
-    @property
-    def youtube_embed_url(self):
-        if not self.youtube_url:
-            return ""
-        url = self.youtube_url.strip()
-        if "youtu.be/" in url:
-            vid = url.split("youtu.be/")[-1].split("?")[0]
-            return f"https://www.youtube.com/embed/{vid}"
-        if "watch?v=" in url:
-            vid = url.split("watch?v=")[-1].split("&")[0]
-            return f"https://www.youtube.com/embed/{vid}"
-        if "youtube.com/embed/" in url:
-            return url
-        return url
-
-    @property
-    def has_video(self):
-        return bool(self.video_file or self.youtube_url)
+        return f"{self.grant.name} | {self.title}"
 
 
-# ─── Mustaqil Grant (universitetga bog'liq emas) ─────────────
+# ─── Mustaqil Grant ──────────────────────────────────────────
 class StandaloneGrant(models.Model):
-    """
-    Universitetga bog'liq bo'lmagan grantlar.
-    Ixtiyoriy ravishda bir yoki bir nechta universitetga bog'lash mumkin.
-    """
     name          = models.CharField("Grant nomi", max_length=255)
     slug          = models.SlugField(max_length=255, unique=True, blank=True)
     cover_image   = models.ImageField("Muqova rasm", upload_to="grants/covers/", blank=True, null=True)
     logo          = models.ImageField("Logotip / Bayroq", upload_to="grants/logos/", blank=True, null=True)
-
     grant_type    = models.CharField("Grant turi", max_length=10, choices=GRANT_TYPE_CHOICES, default='foreign')
     country       = models.CharField("Mamlakat", max_length=10, choices=COUNTRY_CHOICES, default='uz')
     degree        = models.CharField("Daraja", max_length=20, choices=DEGREE_CHOICES, default='all')
-
-    # Asosiy ma'lumotlar
     description   = models.TextField("Tavsif", blank=True)
-    founded_year  = models.PositiveIntegerField("Tashkil etilgan yil", null=True, blank=True)
-    directions    = models.TextField("Yo'nalishlar", blank=True,
-                                     help_text="Har bir yo'nalishni yangi qatordan yozing")
-    requirements  = models.TextField("Talablar", blank=True,
-                                     help_text="Har bir talabni yangi qatordan yozing")
-    winners_count = models.CharField("G'oliblar soni", max_length=100, blank=True,
-                                     help_text="Masalan: Har yil 10-30 nafar")
-
-    # Mukofot
-    amount        = models.CharField("Mukofot miqdori", max_length=255, blank=True,
-                                     help_text="Masalan: To'liq grant yoki Oyiga 900,000 KRW")
+    directions    = models.TextField("Yo'nalishlar", blank=True)
+    requirements  = models.TextField("Talablar", blank=True)
+    amount        = models.CharField("Mukofot miqdori", max_length=255, blank=True)
     deadline      = models.DateField("Ariza muddati", null=True, blank=True)
-    deadline_text = models.CharField("Muddat matni", max_length=100, blank=True,
-                                     help_text="Masalan: Har yili bahor-yoz")
-
-    # IELTS / GPA talablari
+    deadline_text = models.CharField("Muddat matni", max_length=100, blank=True)
     min_ielts     = models.FloatField("Min IELTS", null=True, blank=True)
     min_gpa       = models.FloatField("Min GPA", null=True, blank=True)
-
-    # Ixtiyoriy universitet bog'lash (ko'p-ko'p)
-    universities  = models.ManyToManyField(
-        University, blank=True,
-        related_name='standalone_grants',
-        verbose_name="Universitetlar (ixtiyoriy)",
-        help_text="Bo'sh qoldirilsa — umumiy grantlar ro'yxatida ko'rinadi"
-    )
-
+    universities  = models.ManyToManyField(University, blank=True, related_name='standalone_grants')
     apply_url     = models.URLField("Ariza sahifasi", blank=True)
-    official_site = models.URLField("Rasmiy sayt", blank=True)
     is_active     = models.BooleanField("Faol", default=True)
     created_at    = models.DateTimeField(auto_now_add=True)
     updated_at    = models.DateTimeField(auto_now=True)
@@ -254,30 +199,12 @@ class StandaloneGrant(models.Model):
         ordering            = ['grant_type', 'name']
 
     def __str__(self):
-        return f"{self.get_grant_type_display()} — {self.name}"
+        return self.name
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base = slugify(self.name) or str(uuid.uuid4())[:8]
-            slug = base
-            n    = 1
-            while StandaloneGrant.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                slug = f"{base}-{n}"
-                n   += 1
-            self.slug = slug
+            self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        from django.urls import reverse
-        return reverse('universities:standalone_grant_detail', kwargs={'slug': self.slug})
-
-    @property
-    def directions_list(self):
-        return [d.strip() for d in self.directions.splitlines() if d.strip()]
-
-    @property
-    def requirements_list(self):
-        return [r.strip() for r in self.requirements.splitlines() if r.strip()]
 
 
 # ─── Mustaqil Grant Video ─────────────────────────────────────
@@ -296,7 +223,6 @@ class StandaloneGrantVideo(models.Model):
     video_file   = models.FileField("Video fayl", upload_to=standalone_grant_video_path, blank=True, null=True)
     youtube_url  = models.URLField("YouTube havolasi", blank=True)
     duration     = models.CharField("Davomiyligi", max_length=20, blank=True)
-    thumbnail    = models.ImageField("Muqova rasm", upload_to="grants/video_thumbs/", blank=True, null=True)
     is_published = models.BooleanField("E'lon qilingan", default=True)
     created_at   = models.DateTimeField(auto_now_add=True)
 
@@ -306,131 +232,48 @@ class StandaloneGrantVideo(models.Model):
         ordering            = ['grant', 'order']
 
     def __str__(self):
-        try:
-            return f"{self.video.grant.name} | {self.video.title} — {self.title}"
-        except Exception:
-            return self.title
-
-    @property
-    def youtube_embed_url(self):
-        if not self.youtube_url:
-            return ""
-        url = self.youtube_url.strip()
-        if "youtu.be/" in url:
-            vid = url.split("youtu.be/")[-1].split("?")[0]
-            return f"https://www.youtube.com/embed/{vid}"
-        if "watch?v=" in url:
-            vid = url.split("watch?v=")[-1].split("&")[0]
-            return f"https://www.youtube.com/embed/{vid}"
-        if "youtube.com/embed/" in url:
-            return url
-        return url
-
-    @property
-    def has_video(self):
-        return bool(self.video_file or self.youtube_url)
+        return f"{self.grant.name} | {self.title}"
 
 
-# ─── Universitet Content (AI uchun) ─────────────────────────
+# ─── Universitet Kontent ─────────────────────────────────────
 class UniversityContent(models.Model):
-    CONTENT_TYPE_CHOICES = [
-        ('pdf',   'PDF hujjat'),
-        ('docx',  'Word hujjat'),
-        ('image', 'Rasm'),
-        ('text',  'Matn'),
-        ('audio', 'Audio'),
-        ('video', 'Video'),
-    ]
-
-    university   = models.ForeignKey(
-        University, on_delete=models.CASCADE,
-        related_name='contents', verbose_name="Universitet"
-    )
+    university   = models.ForeignKey(University, on_delete=models.CASCADE, related_name='contents')
     title        = models.CharField("Sarlavha", max_length=255)
-    content_type = models.CharField("Tur", max_length=10, choices=CONTENT_TYPE_CHOICES)
-    file         = models.FileField("Fayl", upload_to="universities/content/", blank=True, null=True)
-    text_content = models.TextField("Matn", blank=True)
-    ai_extracted = models.TextField("AI ajratgan matn", blank=True)
-    ai_summary   = models.TextField("AI xulosasi", blank=True)
-    ai_processed = models.BooleanField("AI qayta ishladi", default=False)
-    created_at   = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name        = "Universitet Kontent"
-        verbose_name_plural = "Universitet Kontentlar"
+    content_type = models.CharField(max_length=10, choices=[('pdf', 'PDF'), ('text', 'Matn')])
+    file         = models.FileField(upload_to="universities/content/", blank=True, null=True)
+    text_content = models.TextField(blank=True)
+    ai_processed = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.university.name} — {self.title}"
 
 
-# ─── Essay Namunasi ──────────────────────────────────────────
-ESSAY_TYPE_CHOICES = [
-    ('why_us',          "Nega bu universitet?"),
-    ('personal_stmt',   "Shaxsiy bayonot"),
-    ('motivation',      "Motivatsiya xati"),
-    ('scholarship',     "Grant uchun esse"),
-    ('extracurricular', "Qo'shimcha faoliyat"),
-    ('challenge',       "Hayotiy qiyinchilik"),
-    ('achievement',     "Yutuq haqida"),
-    ('general',         "Umumiy esse"),
-]
-
-ESSAY_SCORE_CHOICES = [
-    (5, "⭐⭐⭐⭐⭐ A'lo (namuna)"),
-    (4, "⭐⭐⭐⭐ Yaxshi"),
-    (3, "⭐⭐⭐ O'rtacha"),
-]
-
-
+# ─── Esse Namunasi ──────────────────────────────────────────
 class EssaySample(models.Model):
     title       = models.CharField("Sarlavha", max_length=255)
-    essay_type  = models.CharField("Esse turi", max_length=30, choices=ESSAY_TYPE_CHOICES, default='general')
-    university  = models.ForeignKey(
-        University, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='essay_samples',
-        verbose_name="Universitet (ixtiyoriy)"
-    )
+    university  = models.ForeignKey(University, on_delete=models.SET_NULL, null=True, blank=True)
     content     = models.TextField("Esse matni")
-    score       = models.PositiveSmallIntegerField("Namuna sifati", choices=ESSAY_SCORE_CHOICES, default=5)
-    structure_notes = models.TextField("Struktura izohi", blank=True)
-    word_count  = models.PositiveIntegerField("So'z soni", default=0)
-    language    = models.CharField("Til", max_length=5,
-                                   choices=[('en', 'Ingliz'), ('uz', "O'zbek"), ('ru', 'Rus')],
-                                   default='en')
-    is_active   = models.BooleanField("Faol (AI uchun ishlatiladi)", default=True)
-    created_at  = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name        = "Esse Namunasi"
-        verbose_name_plural = "Esse Namunalari"
-        ordering            = ['-score', 'essay_type']
+    score       = models.IntegerField(default=5)
+    is_active   = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"[{self.get_essay_type_display()}] {self.title} ({self.score}⭐)"
-
-    def save(self, *args, **kwargs):
-        if self.content:
-            self.word_count = len(self.content.split())
-        super().save(*args, **kwargs)
+        return self.title
 
 
-# ─── Grant Test ──────────────────────────────────────────────
+# ─── Grant Test (TO'G'RILANGAN QISM) ─────────────────────────
 class GrantTest(models.Model):
     video        = models.OneToOneField(
-        StandaloneGrantVideo, on_delete=models.CASCADE,
-        related_name='test', verbose_name="Video dars"
+        StandaloneGrantVideo, 
+        on_delete=models.CASCADE,
+        related_name='test', 
+        verbose_name="Video dars",
+        null=True,   # <-- Migratsiya xatosini oldini olish uchun
+        blank=True   # <-- Migratsiya xatosini oldini olish uchun
     )
     title        = models.CharField("Test sarlavhasi", max_length=255)
-    description  = models.TextField("Tavsif", blank=True,
-                                    help_text="Test haqida qisqacha ma'lumot")
-    time_limit   = models.PositiveSmallIntegerField(
-        "Vaqt limiti (daqiqa)", default=10,
-        help_text="0 = vaqt cheklanmagan"
-    )
-    pass_percent = models.PositiveSmallIntegerField(
-        "O'tish foizi (%)", default=60,
-        help_text="Testni o'tish uchun minimal foiz (masalan: 60)"
-    )
+    description  = models.TextField("Tavsif", blank=True)
+    time_limit   = models.PositiveSmallIntegerField("Vaqt limiti (daqiqa)", default=10)
+    pass_percent = models.PositiveSmallIntegerField("O'tish foizi (%)", default=60)
     is_active    = models.BooleanField("Faol", default=True)
     created_at   = models.DateTimeField(auto_now_add=True)
 
@@ -440,32 +283,17 @@ class GrantTest(models.Model):
 
     def __str__(self):
         try:
-            return f"{self.video.grant.name} | {self.video.title} — {self.title}"
-        except Exception:
+            return f"{self.video.grant.name} | {self.title}"
+        except:
             return self.title
-
-    @property
-    def question_count(self):
-        return self.questions.count()
-
-    @property
-    def max_score(self):
-        return self.questions.count()
 
 
 # ─── Test Savoli ─────────────────────────────────────────────
 class GrantQuestion(models.Model):
-    test         = models.ForeignKey(
-        GrantTest, on_delete=models.CASCADE,
-        related_name='questions', verbose_name="Test"
-    )
+    test         = models.ForeignKey(GrantTest, on_delete=models.CASCADE, related_name='questions')
     text         = models.TextField("Savol matni")
     order        = models.PositiveSmallIntegerField("Tartib", default=0)
-    explanation  = models.TextField(
-        "Tushuntirish", blank=True,
-        help_text="To'g'ri javob tushuntirishi — natija sahifasida ko'rinadi"
-    )
-    created_at   = models.DateTimeField(auto_now_add=True)
+    explanation  = models.TextField("Tushuntirish", blank=True)
 
     class Meta:
         verbose_name        = "Test Savoli"
@@ -473,16 +301,12 @@ class GrantQuestion(models.Model):
         ordering            = ['test', 'order']
 
     def __str__(self):
-        return f"{self.test.title} — {self.text[:60]}"
-
+        return self.text[:60]
 
 
 # ─── Javob Varianti ──────────────────────────────────────────
 class GrantChoice(models.Model):
-    question     = models.ForeignKey(
-        GrantQuestion, on_delete=models.CASCADE,
-        related_name='choices', verbose_name="Savol"
-    )
+    question     = models.ForeignKey(GrantQuestion, on_delete=models.CASCADE, related_name='choices')
     text         = models.CharField("Variant matni", max_length=500)
     is_correct   = models.BooleanField("To'g'ri javob", default=False)
     order        = models.PositiveSmallIntegerField("Tartib", default=0)
@@ -493,57 +317,21 @@ class GrantChoice(models.Model):
         ordering            = ['question', 'order']
 
     def __str__(self):
-        mark = "✅" if self.is_correct else "❌"
-        return f"{mark} {self.text[:60]}"
+        return self.text[:60]
 
 
 # ─── Test Natijasi ────────────────────────────────────────────
 class GrantTestResult(models.Model):
-    user         = models.ForeignKey(
-        'accounts.CustomUser', on_delete=models.CASCADE,
-        related_name='test_results', verbose_name="Foydalanuvchi"
-    )
-    test         = models.ForeignKey(
-        GrantTest, on_delete=models.CASCADE,
-        related_name='results', verbose_name="Test"
-    )
+    user         = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE, related_name='test_results')
+    test         = models.ForeignKey(GrantTest, on_delete=models.CASCADE, related_name='results')
     score        = models.PositiveSmallIntegerField("To'g'ri javoblar soni", default=0)
     total        = models.PositiveSmallIntegerField("Jami savollar", default=0)
     time_spent   = models.PositiveIntegerField("Sarflangan vaqt (soniya)", default=0)
-    answers      = models.JSONField(
-        "Javoblar", default=dict,
-        help_text="{'question_id': choice_id, ...}"
-    )
     created_at   = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name        = "Test Natijasi"
-        verbose_name_plural = "Test Natijalari"
-        ordering            = ['-created_at']
-
-    def __str__(self):
-        return f"{self.user.email} — {self.test.title} — {self.percent}%"
 
     @property
     def percent(self):
-        if not self.total:
-            return 0
-        return round((self.score / self.total) * 100)
+        return round((self.score / self.total) * 100) if self.total else 0
 
-    @property
-    def is_passed(self):
-        return self.percent >= self.test.pass_percent
-
-    @property
-    def grade(self):
-        p = self.percent
-        if p >= 90: return "A'lo ⭐⭐⭐"
-        if p >= 75: return "Yaxshi ⭐⭐"
-        if p >= 60: return "Qoniqarli ⭐"
-        return "Qoniqarsiz"
-
-    @property
-    def time_spent_display(self):
-        m = self.time_spent // 60
-        s = self.time_spent % 60
-        return f"{m}:{s:02d}"
+    def __str__(self):
+        return f"{self.user.email} — {self.percent}%"
