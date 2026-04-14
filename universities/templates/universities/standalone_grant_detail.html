@@ -223,6 +223,24 @@
   {% endif %}
 
   {# ── Footer ── #}
+  {# ── Test ── #}
+  {% if grant.test and grant.test.is_active %}
+    <div class="sg-test-banner">
+      <div class="sg-test-banner__info">
+        <span class="sg-test-banner__icon">📝</span>
+        <div>
+          <div class="sg-test-banner__title">{{ grant.test.title }}</div>
+          <div class="sg-test-banner__meta">
+            {{ grant.test.question_count }} ta savol
+            {% if grant.test.time_limit %} · {{ grant.test.time_limit }} daqiqa{% endif %}
+            · O'tish: {{ grant.test.pass_percent }}%
+          </div>
+        </div>
+      </div>
+      <a href="{% url 'universities:grant_test' grant.slug %}" class="btn-test">🚀 Testni boshlash</a>
+    </div>
+  {% endif %}
+
   <div class="sg-footer-actions">
     <a href="{% url 'universities:standalone_list' %}" class="btn btn--ghost">
       <span data-i18n="standalone_back">← Grantlarga qaytish</span>
@@ -361,6 +379,27 @@
   .sg-footer-actions__right { flex-direction: column; }
   .btn--apply, .btn--ai, .btn--ghost { text-align: center; width: 100%; box-sizing: border-box; }
 }
+
+/* Test banner */
+.sg-test-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--accent-soft), rgba(99,102,241,.08));
+  border: 1.5px solid var(--accent);
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+}
+.sg-test-banner__info { display: flex; align-items: center; gap: 12px; }
+.sg-test-banner__icon { font-size: 1.8rem; }
+.sg-test-banner__title { font-size: .95rem; font-weight: 700; color: var(--text-primary); }
+.sg-test-banner__meta  { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+.btn-test {
+  background: var(--accent); color: #fff;
+  padding: 10px 20px; border-radius: 10px;
+  text-decoration: none; font-size: .88rem; font-weight: 600;
+  white-space: nowrap; transition: opacity .2s;
+}
+.btn-test:hover { opacity: .88; color: #fff; }
+
 </style>
 {% endblock %}
 

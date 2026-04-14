@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="test-page">
+
+  {# ── Breadcrumb ── #}
+  <nav class="breadcrumb">
+    <a href="{% url 'universities:standalone_list' %}">Grantlar</a>
+    <span>›</span>
+    <a href="{{ grant.get_absolute_url }}">{{ grant.name }}</a>
+    <span>›</span>
+    <span>Test</span>
+  </nav>
+
+  {# ── Test boshlanmagan ── #}
+  <div id="testIntro" class="test-intro">
+    <div class="test-intro__icon">📝</div>
+    <h1 class="test-intro__title">{{ test.title }}</h1>
+    {% if test.description %}
+      <p class="test-intro__desc">{{ test.description }}</p>
+    {% endif %}
+    <div class="test-intro__meta">
+      <div class="test-meta-card">
+        <span class="test-meta-card__icon">❓</span>
+        <div>
+          <div class="test-meta-card__label">Savollar</div>
+          <div class="test-meta-card__val">{{ questions.count }} ta</div>
+        </div>
+      </div>
+      {% if test.time_limit > 0 %}
+        <div class="test-meta-card">
+          <span class="test-meta-card__icon">⏱</span>
+          <div>
+            <div class="test-meta-card__label">Vaqt</div>
+            <div class="test-meta-card__val">{{ test.time_limit }} daqiqa</div>
+          </div>
+        </div>
+      {% endif %}
+      <div class="test-meta-card">
+        <span class="test-meta-card__icon">🎯</span>
+        <div>
+          <div class="test-meta-card__label">O'tish</div>
+          <div class="test-meta-card__val">{{ test.pass_percent }}%</div>
+        </div>
+      </div>
+    </div>
+
+    {% if history %}
+      <div class="test-history">
+        <h3 class="test-history__title">📊 Oldingi urinishlar</h3>
+        <div class="test-history__list">
+          {% for r in history %}
+            <div class="test-history__item {% if r.is_passed %}test-history__item--pass{% else %}test-history__item--fail{% endif %}">
+              <span>{{ r.created_at|date:"d.m.Y H:i" }}</span>
+              <span class="fw-bold">{{ r.score }}/{{ r.total }} ({{ r.percent }}%)</span>
+              <span>{{ r.grade }}</span>
+              <span>⏱ {{ r.time_spent_display }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <button class="btn-start" onclick="startTest()">🚀 Testni boshlash</button>
+    <a href="{{ grant.get_absolute_url }}" class="btn-back">← Grantga qaytish</a>
+  </div>
+
+  {# ── Test sahifasi ── #}
+  <div id="testArea" style="display:none;">
+
+    {# Timer va progress #}
+    <div class="test-header">
+      <div class="test-progress-wrap">
+        <span id="progressText">1 / {{ questions.count }}</span>
+        <div class="test-progress-bar">
+          <div class="test-progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+      {% if test.time_limit > 0 %}
+        <div class="test-timer" id="timerDisplay">
+          <span>⏱</span> <span id="timerText">{{ test.time_limit }}:00</span>
+        </div>
+      {% endif %}
+    </div>
+
+    {# Savollar #}
+    <div id="questionsContainer">
+      {% for q in questions %}
+        <div class="test-question" id="q{{ q.id }}" {% if not forloop.first %}style="display:none"{% endif %}>
+          <div class="test-question__num">Savol {{ forloop.counter }} / {{ questions.count }}</div>
+          <h2 class="test-question__text">{{ q.text }}</h2>
+          <div class="test-choices">
+            {% for c in q.choices.all %}
+              <label class="test-choice" data-choice="{{ c.id }}">
+                <input type="radio" name="q{{ q.id }}" value="{{ c.id }}" style="display:none">
+                <span class="test-choice__letter">{% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% else %}D{% endif %}</span>
+                <span class="test-choice__text">{{ c.text }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          <div class="test-nav">
+            {% if not forloop.first %}
+              <button class="btn-nav btn-prev" onclick="prevQuestion({{ forloop.counter }})">← Orqaga</button>
+            {% else %}
+              <span></span>
+            {% endif %}
+            {% if not forloop.last %}
+              <button class="btn-nav btn-next" onclick="nextQuestion({{ forloop.counter }})">Keyingisi →</button>
+            {% else %}
+              <button class="btn-nav btn-submit" onclick="submitTest()">✅ Testni yakunlash</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Natija sahifasi ── #}
+  <div id="resultArea" style="display:none;">
+    <div class="result-card">
+      <div class="result-icon" id="resultIcon">🎉</div>
+      <h2 class="result-title" id="resultTitle"></h2>
+      <div class="result-score" id="resultScore"></div>
+      <div class="result-grade" id="resultGrade"></div>
+      <div class="result-meta">
+        <span id="resultTime"></span>
+        <span id="resultPassFail"></span>
+      </div>
+
+      {# Savollar tahlili #}
+      <div class="result-details" id="resultDetails"></div>
+
+      <div class="result-actions">
+        <button class="btn-retry" onclick="retryTest()">🔄 Qayta urinish</button>
+        <a href="{{ grant.get_absolute_url }}" class="btn-back-grant">← Grantga qaytish</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.test-page { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.breadcrumb { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--text-muted); margin-bottom: 24px; flex-wrap: wrap; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+
+/* Intro */
+.test-intro { text-align: center; padding: 20px 0; }
+.test-intro__icon { font-size: 3rem; margin-bottom: 12px; }
+.test-intro__title { font-size: 1.5rem; font-weight: 700; margin: 0 0 8px; color: var(--text-primary); }
+.test-intro__desc  { color: var(--text-secondary); margin: 0 0 24px; line-height: 1.6; }
+
+.test-intro__meta { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.test-meta-card { display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 16px; min-width: 110px; }
+.test-meta-card__icon  { font-size: 1.4rem; }
+.test-meta-card__label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+.test-meta-card__val   { font-size: .95rem; font-weight: 700; color: var(--text-primary); }
+
+/* History */
+.test-history { margin-bottom: 24px; text-align: left; }
+.test-history__title { font-size: .9rem; font-weight: 700; margin: 0 0 8px; color: var(--text-primary); }
+.test-history__list { display: flex; flex-direction: column; gap: 6px; }
+.test-history__item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 10px; font-size: .82rem; flex-wrap: wrap; gap: 6px; border: 1px solid var(--border-color); }
+.test-history__item--pass { border-color: #10b981; background: rgba(16,185,129,.05); }
+.test-history__item--fail { border-color: #ef4444; background: rgba(239,68,68,.05); }
+
+.btn-start { background: var(--accent); color: #fff; border: none; padding: 14px 36px; border-radius: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: opacity .2s; display: block; margin: 0 auto 12px; }
+.btn-start:hover { opacity: .88; }
+.btn-back { display: inline-block; color: var(--text-muted); font-size: .85rem; text-decoration: none; }
+.btn-back:hover { color: var(--accent); }
+
+/* Test header */
+.test-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.test-progress-wrap { flex: 1; }
+.test-progress-bar { height: 8px; background: var(--border-color); border-radius: 10px; overflow: hidden; margin-top: 4px; }
+.test-progress-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: width .3s; }
+#progressText { font-size: .82rem; color: var(--text-muted); }
+.test-timer { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 8px 14px; font-size: .9rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+.test-timer.danger { border-color: #ef4444; color: #ef4444; }
+
+/* Question */
+.test-question { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 16px; padding: 24px; }
+.test-question__num  { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+.test-question__text { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); margin: 0 0 20px; line-height: 1.5; }
+
+/* Choices */
+.test-choices { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.test-choice { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1.5px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: all .2s; }
+.test-choice:hover { border-color: var(--accent); background: var(--accent-soft); }
+.test-choice.selected { border-color: var(--accent); background: var(--accent-soft); }
+.test-choice__letter { width: 30px; height: 30px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; font-size: .82rem; font-weight: 700; flex-shrink: 0; color: var(--text-primary); }
+.test-choice.selected .test-choice__letter { background: var(--accent); color: #fff; }
+.test-choice__text { font-size: .9rem; color: var(--text-primary); line-height: 1.4; }
+
+/* Nav buttons */
+.test-nav { display: flex; justify-content: space-between; align-items: center; }
+.btn-nav { padding: 10px 20px; border-radius: 10px; font-size: .88rem; font-weight: 600; cursor: pointer; border: none; transition: all .2s; }
+.btn-prev   { background: var(--bg-card); border: 1.5px solid var(--border-color); color: var(--text-secondary); }
+.btn-prev:hover { border-color: var(--accent); color: var(--accent); }
+.btn-next   { background: var(--accent); color: #fff; }
+.btn-next:hover { opacity: .88; }
+.btn-submit { background: #10b981; color: #fff; }
+.btn-submit:hover { opacity: .88; }
+
+/* Result */
+.result-card { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 20px; padding: 32px 24px; text-align: center; }
+.result-icon  { font-size: 3.5rem; margin-bottom: 12px; }
+.result-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 8px; color: var(--text-primary); }
+.result-score { font-size: 2.5rem; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+.result-grade { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary); }
+.result-meta  { display: flex; justify-content: center; gap: 16px; font-size: .85rem; color: var(--text-muted); margin-bottom: 20px; flex-wrap: wrap; }
+
+.result-details { text-align: left; margin: 16px 0; display: flex; flex-direction: column; gap: 10px; }
+.result-detail-item { border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 14px; }
+.result-detail-item.correct { border-color: #10b981; background: rgba(16,185,129,.05); }
+.result-detail-item.wrong   { border-color: #ef4444; background: rgba(239,68,68,.05); }
+.result-detail-item.skipped { border-color: #f59e0b; background: rgba(245,158,11,.05); }
+.result-detail-qtext { font-size: .88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.result-detail-meta  { font-size: .78rem; color: var(--text-muted); }
+.result-detail-expl  { font-size: .78rem; color: var(--text-secondary); margin-top: 4px; font-style: italic; }
+
+.result-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+.btn-retry { background: var(--accent); color: #fff; border: none; padding: 11px 24px; border-radius: 10px; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.btn-back-grant { background: var(--bg-card); border: 1.5px solid var(--border-color); color: var(--text-secondary); padding: 10px 20px; border-radius: 10px; text-decoration: none; font-size: .88rem; font-weight: 500; }
+.btn-back-grant:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 600px) {
+  .test-question { padding: 16px; }
+  .result-card   { padding: 20px 14px; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const QUESTIONS    = {{ questions|length }};
+const TIME_LIMIT   = {{ test.time_limit }} * 60; // soniyaga
+const SUBMIT_URL   = "{% url 'universities:grant_test_submit' grant.slug %}";
+const CSRF_TOKEN   = "{{ csrf_token }}";
+
+let currentQ    = 1;
+let answers     = {};  // {question_id: choice_id}
+let timer       = null;
+let timeLeft    = TIME_LIMIT;
+let startTime   = null;
+
+function startTest() {
+  document.getElementById('testIntro').style.display = 'none';
+  document.getElementById('testArea').style.display  = 'block';
+  startTime = Date.now();
+  if (TIME_LIMIT > 0) startTimer();
+  updateProgress();
+}
+
+function startTimer() {
+  timeLeft = TIME_LIMIT;
+  updateTimerDisplay();
+  timer = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      submitTest(true);
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m   = Math.floor(timeLeft / 60);
+  const s   = timeLeft % 60;
+  const el  = document.getElementById('timerText');
+  const wrap = document.getElementById('timerDisplay');
+  if (el) {
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (timeLeft <= 60 && wrap) wrap.classList.add('danger');
+  }
+}
+
+function updateProgress() {
+  const pct = ((currentQ - 1) / QUESTIONS) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${currentQ} / ${QUESTIONS}`;
+}
+
+// Variant tanlash
+document.addEventListener('click', function(e) {
+  const choice = e.target.closest('.test-choice');
+  if (!choice) return;
+  const qEl   = choice.closest('.test-question');
+  const qId   = qEl.id.replace('q', '');
+  const cId   = choice.dataset.choice;
+
+  qEl.querySelectorAll('.test-choice').forEach(c => c.classList.remove('selected'));
+  choice.classList.add('selected');
+  choice.querySelector('input').checked = true;
+  answers[qId] = cId;
+});
+
+function showQuestion(num) {
+  document.querySelectorAll('.test-question').forEach(q => q.style.display = 'none');
+  const qEls = document.querySelectorAll('.test-question');
+  if (qEls[num-1]) qEls[num-1].style.display = 'block';
+  currentQ = num;
+  updateProgress();
+}
+
+function nextQuestion(current) { showQuestion(current + 1); }
+function prevQuestion(current) { showQuestion(current - 1); }
+
+async function submitTest(timeUp = false) {
+  if (timer) clearInterval(timer);
+  const timeSpent = Math.round((Date.now() - startTime) / 1000);
+
+  document.getElementById('testArea').style.display = 'none';
+
+  try {
+    const res  = await fetch(SUBMIT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: JSON.stringify({ answers, time_spent: timeSpent }),
+    });
+    const data = await res.json();
+    if (data.ok) showResult(data);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function showResult(data) {
+  document.getElementById('resultArea').style.display = 'block';
+
+  const passed = data.passed;
+  document.getElementById('resultIcon').textContent  = passed ? '🎉' : '😔';
+  document.getElementById('resultTitle').textContent = passed ? "Tabriklaymiz! Test muvaffaqiyatli o'tildi" : "Test o'tilmadi. Qayta urinib ko'ring!";
+  document.getElementById('resultScore').textContent = `${data.score} / ${data.total}`;
+  document.getElementById('resultGrade').textContent = data.grade;
+  document.getElementById('resultTime').textContent  = `⏱ ${data.time}`;
+  document.getElementById('resultPassFail').innerHTML = passed
+    ? '<span style="color:#10b981;font-weight:700">✅ O\'tdingiz!</span>'
+    : `<span style="color:#ef4444;font-weight:700">❌ ${data.percent}% (kerak: {{ test.pass_percent }}%)</span>`;
+
+  // Savollar tahlili
+  const detailsEl = document.getElementById('resultDetails');
+  detailsEl.innerHTML = '';
+  const qEls = document.querySelectorAll('.test-question');
+  qEls.forEach((qEl, idx) => {
+    const qId      = qEl.id.replace('q', '');
+    const detail   = data.details[qId];
+    const qText    = qEl.querySelector('.test-question__text').textContent;
+    if (!detail) return;
+
+    let cls, icon, statusText;
+    if (!detail.chosen) {
+      cls = 'skipped'; icon = '⏭'; statusText = "Javob berilmagan";
+    } else if (detail.is_correct) {
+      cls = 'correct'; icon = '✅'; statusText = "To'g'ri";
+    } else {
+      cls = 'wrong'; icon = '❌'; statusText = "Noto'g'ri";
+    }
+
+    const item = document.createElement('div');
+    item.className = `result-detail-item ${cls}`;
+    item.innerHTML = `
+      <div class="result-detail-qtext">${idx+1}. ${qText}</div>
+      <div class="result-detail-meta">${icon} ${statusText}</div>
+      ${detail.explanation ? `<div class="result-detail-expl">💡 ${detail.explanation}</div>` : ''}
+    `;
+    detailsEl.appendChild(item);
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function retryTest() {
+  answers  = {};
+  currentQ = 1;
+  document.getElementById('resultArea').style.display = 'none';
+  document.querySelectorAll('.test-choice').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+  // Barcha savollarni yashirib 1-savolni ko'rsatish
+  const qEls = document.querySelectorAll('.test-question');
+  qEls.forEach((q, i) => q.style.display = i === 0 ? 'block' : 'none');
+  startTest();
+}
+</script>
+{% endblock %}

@@ -238,3 +238,88 @@ def standalone_grant_detail(request, slug):
         'grant':  grant,
         'videos': videos,
     })
+
+
+# ─── Grant Test ──────────────────────────────────────────────
+@login_required
+def grant_test_view(request, slug):
+    """Test sahifasi"""
+    from .models import StandaloneGrant, GrantTest, GrantTestResult
+    grant = get_object_or_404(StandaloneGrant, slug=slug, is_active=True)
+
+    try:
+        test = grant.test
+        if not test.is_active:
+            return redirect(grant.get_absolute_url())
+    except GrantTest.DoesNotExist:
+        return redirect(grant.get_absolute_url())
+
+    questions = test.questions.prefetch_related('choices').order_by('order')
+    history   = GrantTestResult.objects.filter(
+        user=request.user, test=test
+    ).order_by('-created_at')[:5]
+
+    return render(request, 'universities/grant_test.html', {
+        'grant':     grant,
+        'test':      test,
+        'questions': questions,
+        'history':   history,
+    })
+
+
+@login_required
+@require_POST
+def grant_test_submit(request, slug):
+    """Test javoblarini qabul qilish"""
+    import json as _json
+    from .models import StandaloneGrant, GrantTest, GrantTestResult, GrantQuestion
+    grant = get_object_or_404(StandaloneGrant, slug=slug, is_active=True)
+
+    try:
+        test = grant.test
+    except GrantTest.DoesNotExist:
+        return JsonResponse({'error': 'Test topilmadi'}, status=404)
+
+    try:
+        data       = _json.loads(request.body)
+        answers    = data.get('answers', {})    # {question_id: choice_id}
+        time_spent = int(data.get('time_spent', 0))
+    except Exception:
+        return JsonResponse({'error': "Noto'g'ri so'rov"}, status=400)
+
+    questions = test.questions.prefetch_related('choices')
+    score     = 0
+    total     = questions.count()
+    details   = {}
+
+    for q in questions:
+        chosen_id  = answers.get(str(q.id))
+        correct    = q.choices.filter(is_correct=True).first()
+        is_correct = correct and str(correct.id) == str(chosen_id)
+        if is_correct:
+            score += 1
+        details[str(q.id)] = {
+            'chosen':     chosen_id,
+            'correct':    str(correct.id) if correct else None,
+            'is_correct': is_correct,
+            'explanation': q.explanation,
+        }
+
+    result = GrantTestResult.objects.create(
+        user=request.user, test=test,
+        score=score, total=total,
+        time_spent=time_spent,
+        answers=details,
+    )
+
+    return JsonResponse({
+        'ok':        True,
+        'score':     score,
+        'total':     total,
+        'percent':   result.percent,
+        'passed':    result.is_passed,
+        'grade':     result.grade,
+        'time':      result.time_spent_display,
+        'result_id': result.id,
+        'details':   details,
+    })

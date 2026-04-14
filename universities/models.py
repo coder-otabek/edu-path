@@ -406,3 +406,135 @@ class EssaySample(models.Model):
         if self.content:
             self.word_count = len(self.content.split())
         super().save(*args, **kwargs)
+
+
+# ─── Grant Test ──────────────────────────────────────────────
+class GrantTest(models.Model):
+    grant        = models.OneToOneField(
+        StandaloneGrant, on_delete=models.CASCADE,
+        related_name='test', verbose_name="Grant"
+    )
+    title        = models.CharField("Test sarlavhasi", max_length=255)
+    description  = models.TextField("Tavsif", blank=True,
+                                    help_text="Test haqida qisqacha ma'lumot")
+    time_limit   = models.PositiveSmallIntegerField(
+        "Vaqt limiti (daqiqa)", default=10,
+        help_text="0 = vaqt cheklanmagan"
+    )
+    pass_percent = models.PositiveSmallIntegerField(
+        "O'tish foizi (%)", default=60,
+        help_text="Testni o'tish uchun minimal foiz (masalan: 60)"
+    )
+    is_active    = models.BooleanField("Faol", default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Grant Testi"
+        verbose_name_plural = "Grant Testlari"
+
+    def __str__(self):
+        return f"{self.grant.name} — {self.title}"
+
+    @property
+    def question_count(self):
+        return self.questions.count()
+
+    @property
+    def max_score(self):
+        return self.questions.count()
+
+
+# ─── Test Savoli ─────────────────────────────────────────────
+class GrantQuestion(models.Model):
+    test         = models.ForeignKey(
+        GrantTest, on_delete=models.CASCADE,
+        related_name='questions', verbose_name="Test"
+    )
+    text         = models.TextField("Savol matni")
+    order        = models.PositiveSmallIntegerField("Tartib", default=0)
+    explanation  = models.TextField(
+        "Tushuntirish", blank=True,
+        help_text="To'g'ri javob tushuntirishi — natija sahifasida ko'rinadi"
+    )
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Test Savoli"
+        verbose_name_plural = "Test Savollari"
+        ordering            = ['test', 'order']
+
+    def __str__(self):
+        return f"{self.test.title} — {self.text[:60]}"
+
+
+
+# ─── Javob Varianti ──────────────────────────────────────────
+class GrantChoice(models.Model):
+    question     = models.ForeignKey(
+        GrantQuestion, on_delete=models.CASCADE,
+        related_name='choices', verbose_name="Savol"
+    )
+    text         = models.CharField("Variant matni", max_length=500)
+    is_correct   = models.BooleanField("To'g'ri javob", default=False)
+    order        = models.PositiveSmallIntegerField("Tartib", default=0)
+
+    class Meta:
+        verbose_name        = "Javob Varianti"
+        verbose_name_plural = "Javob Variantlari"
+        ordering            = ['question', 'order']
+
+    def __str__(self):
+        mark = "✅" if self.is_correct else "❌"
+        return f"{mark} {self.text[:60]}"
+
+
+# ─── Test Natijasi ────────────────────────────────────────────
+class GrantTestResult(models.Model):
+    user         = models.ForeignKey(
+        'accounts.CustomUser', on_delete=models.CASCADE,
+        related_name='test_results', verbose_name="Foydalanuvchi"
+    )
+    test         = models.ForeignKey(
+        GrantTest, on_delete=models.CASCADE,
+        related_name='results', verbose_name="Test"
+    )
+    score        = models.PositiveSmallIntegerField("To'g'ri javoblar soni", default=0)
+    total        = models.PositiveSmallIntegerField("Jami savollar", default=0)
+    time_spent   = models.PositiveIntegerField("Sarflangan vaqt (soniya)", default=0)
+    answers      = models.JSONField(
+        "Javoblar", default=dict,
+        help_text="{'question_id': choice_id, ...}"
+    )
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Test Natijasi"
+        verbose_name_plural = "Test Natijalari"
+        ordering            = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} — {self.test.title} — {self.percent}%"
+
+    @property
+    def percent(self):
+        if not self.total:
+            return 0
+        return round((self.score / self.total) * 100)
+
+    @property
+    def is_passed(self):
+        return self.percent >= self.test.pass_percent
+
+    @property
+    def grade(self):
+        p = self.percent
+        if p >= 90: return "A'lo ⭐⭐⭐"
+        if p >= 75: return "Yaxshi ⭐⭐"
+        if p >= 60: return "Qoniqarli ⭐"
+        return "Qoniqarsiz"
+
+    @property
+    def time_spent_display(self):
+        m = self.time_spent // 60
+        s = self.time_spent % 60
+        return f"{m}:{s:02d}"

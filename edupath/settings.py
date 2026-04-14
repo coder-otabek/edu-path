@@ -132,15 +132,18 @@ JAZZMIN_SETTINGS = {
         "universities", "accounts", "ai_engine", "dashboard", "core",
     ],
     "icons": {
-        "accounts.CustomUser":          "fas fa-users",
-        "accounts.AbituriyentProfile":  "fas fa-user-graduate",
-        "universities.University":      "fas fa-university",
-        "universities.Grant":           "fas fa-award",
-        "universities.StandaloneGrant": "fas fa-medal",
-        "universities.EssaySample":     "fas fa-file-alt",
-        "ai_engine.ChatSession":        "fas fa-comments",
-        "ai_engine.RoadMap":            "fas fa-map",
-        "core.AISettings":              "fas fa-robot",
+        "accounts.CustomUser":            "fas fa-users",
+        "accounts.AbituriyentProfile":    "fas fa-user-graduate",
+        "universities.University":        "fas fa-university",
+        "universities.Grant":             "fas fa-award",
+        "universities.StandaloneGrant":   "fas fa-medal",
+        "universities.GrantTest":         "fas fa-clipboard-list",
+        "universities.GrantQuestion":     "fas fa-question-circle",
+        "universities.GrantTestResult":   "fas fa-chart-bar",
+        "universities.EssaySample":       "fas fa-file-alt",
+        "ai_engine.ChatSession":          "fas fa-comments",
+        "ai_engine.RoadMap":              "fas fa-map",
+        "core.AISettings":                "fas fa-robot",
     },
     "default_icon_parents": "fas fa-folder",
     "default_icon_children": "fas fa-circle",
@@ -222,7 +225,6 @@ else:
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 kun
 
 # ─── Email (Gmail SMTP) ──────────────────────────────────────
-# USE_SQLITE dan mustaqil — .env da email bo'lsa ishlatadi
 EMAIL_HOST          = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT          = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS       = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
@@ -237,7 +239,7 @@ elif EMAIL_HOST_USER:
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# ─── Site URL (email havolalar uchun) ────────────────────────
+# ─── Site URL ────────────────────────────────────────────────
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 # ─── Celery ──────────────────────────────────────────────────
@@ -252,7 +254,11 @@ CELERY_TIMEZONE          = 'Asia/Tashkent'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 
-# ─── Production security ─────────────────────────────────────
+# ─── Security ────────────────────────────────────────────────
+SECURE_SSL_REDIRECT = False
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -260,8 +266,3 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-
-SECURE_SSL_REDIRECT = False
-# Ngrok uchun
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
