@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
-
 def _get_secret_key():
     key = os.environ.get('SECRET_KEY')
     if key:
@@ -20,7 +19,6 @@ def _get_secret_key():
     key_file.write_text(key)
     return key
 
-
 SECRET_KEY = _get_secret_key()
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
@@ -31,6 +29,7 @@ _csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1:8000')
 CSRF_TRUSTED_ORIGINS = [h.strip().strip("'").strip('"') for h in _csrf.split(',') if h.strip()]
 
 INSTALLED_APPS = [
+    'nested_admin',          # Jazzmin'dan tepada turishi afzal
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -150,6 +149,9 @@ JAZZMIN_SETTINGS = {
     "related_modal_active": True,
     "use_google_fonts_cdn": False,
     "show_ui_builder": False,
+
+    # MUHIM: Nested Admin tablar bilan koflikt qilmasligi uchun "single" rejimiga o'tkazamiz
+    "changeform_format": "single",
 }
 
 JAZZMIN_UI_TWEAKS = {
@@ -222,25 +224,15 @@ else:
     SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     SESSION_CACHE_ALIAS = 'default'
 
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 kun
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30
 
-# ─── Email (Gmail SMTP) ──────────────────────────────────────
+# ─── Email ───────────────────────────────────────────────────
 EMAIL_HOST          = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT          = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS       = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER     = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL  = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@edupath.uz')
-
-if 'test' in sys.argv:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-elif EMAIL_HOST_USER:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# ─── Site URL ────────────────────────────────────────────────
-SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 # ─── Celery ──────────────────────────────────────────────────
 CELERY_BROKER_URL        = REDIS_URL
@@ -258,11 +250,3 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 SECURE_SSL_REDIRECT = False
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
-
-if not DEBUG:
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'

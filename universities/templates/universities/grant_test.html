@@ -241,7 +241,7 @@
 <script>
 const QUESTIONS    = {{ questions|length }};
 const TIME_LIMIT   = {{ test.time_limit }} * 60; // soniyaga
-const SUBMIT_URL   = "{% url 'universities:grant_test_submit' grant.slug %}";
+const SUBMIT_URL   = "{% url 'universities:video_test_submit' grant_slug=grant.slug video_id=video.id %}";
 const CSRF_TOKEN   = "{{ csrf_token }}";
 
 let currentQ    = 1;

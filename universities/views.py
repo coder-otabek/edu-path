@@ -242,17 +242,67 @@ def standalone_grant_detail(request, slug):
 
 # ─── Grant Test ──────────────────────────────────────────────
 @login_required
-def grant_test_view(request, slug):
-    """Test sahifasi"""
-    from .models import StandaloneGrant, GrantTest, GrantTestResult
-    grant = get_object_or_404(StandaloneGrant, slug=slug, is_active=True)
+
+# ─── Video detail sahifasi ───────────────────────────────────
+@login_required
+def standalone_video_detail(request, grant_slug, video_id):
+    """Video alohida sahifada ko'rish + test"""
+    from .models import StandaloneGrant, StandaloneGrantVideo, GrantTest, GrantTestResult
+    grant  = get_object_or_404(StandaloneGrant, slug=grant_slug, is_active=True)
+    video  = get_object_or_404(StandaloneGrantVideo, pk=video_id, grant=grant, is_published=True)
+    videos = grant.videos.filter(is_published=True).order_by('order')
+
+    # Oldingi va keyingi video
+    video_list = list(videos)
+    current_idx = next((i for i, v in enumerate(video_list) if v.pk == video.pk), 0)
+    prev_video  = video_list[current_idx - 1] if current_idx > 0 else None
+    next_video  = video_list[current_idx + 1] if current_idx < len(video_list) - 1 else None
+
+    # Test bormi
+    try:
+        test = video.test
+        has_test = test.is_active and test.questions.exists()
+    except GrantTest.DoesNotExist:
+        test = None
+        has_test = False
+
+    # Test natijasi
+    last_result = None
+    if test:
+        last_result = GrantTestResult.objects.filter(
+            user=request.user, test=test
+        ).order_by('-created_at').first()
+
+    return render(request, 'universities/standalone_video_detail.html', {
+        'grant':       grant,
+        'video':       video,
+        'videos':      videos,
+        'prev_video':  prev_video,
+        'next_video':  next_video,
+        'test':        test,
+        'has_test':    has_test,
+        'last_result': last_result,
+        'current_num': current_idx + 1,
+        'total_num':   len(video_list),
+    })
+
+
+# ─── Video testi ─────────────────────────────────────────────
+@login_required
+def video_test_view(request, grant_slug, video_id):
+    """Video testini ko'rsatish"""
+    from .models import StandaloneGrant, StandaloneGrantVideo, GrantTest, GrantTestResult
+    grant  = get_object_or_404(StandaloneGrant, slug=grant_slug, is_active=True)
+    video  = get_object_or_404(StandaloneGrantVideo, pk=video_id, grant=grant, is_published=True)
 
     try:
-        test = grant.test
+        test = video.test
         if not test.is_active:
-            return redirect(grant.get_absolute_url())
+            return redirect('universities:standalone_video_detail',
+                            grant_slug=grant_slug, video_id=video_id)
     except GrantTest.DoesNotExist:
-        return redirect(grant.get_absolute_url())
+        return redirect('universities:standalone_video_detail',
+                        grant_slug=grant_slug, video_id=video_id)
 
     questions = test.questions.prefetch_related('choices').order_by('order')
     history   = GrantTestResult.objects.filter(
@@ -261,28 +311,33 @@ def grant_test_view(request, slug):
 
     return render(request, 'universities/grant_test.html', {
         'grant':     grant,
+        'video':     video,
         'test':      test,
         'questions': questions,
         'history':   history,
+        'submit_url': request.build_absolute_uri(
+            f'/universities/standalone/{grant_slug}/video/{video_id}/test/submit/'
+        ),
     })
 
 
 @login_required
 @require_POST
-def grant_test_submit(request, slug):
-    """Test javoblarini qabul qilish"""
+def video_test_submit(request, grant_slug, video_id):
+    """Video test javoblarini qabul qilish"""
     import json as _json
-    from .models import StandaloneGrant, GrantTest, GrantTestResult, GrantQuestion
-    grant = get_object_or_404(StandaloneGrant, slug=slug, is_active=True)
+    from .models import StandaloneGrant, StandaloneGrantVideo, GrantTest, GrantTestResult
+    grant  = get_object_or_404(StandaloneGrant, slug=grant_slug, is_active=True)
+    video  = get_object_or_404(StandaloneGrantVideo, pk=video_id, grant=grant)
 
     try:
-        test = grant.test
+        test = video.test
     except GrantTest.DoesNotExist:
         return JsonResponse({'error': 'Test topilmadi'}, status=404)
 
     try:
         data       = _json.loads(request.body)
-        answers    = data.get('answers', {})    # {question_id: choice_id}
+        answers    = data.get('answers', {})
         time_spent = int(data.get('time_spent', 0))
     except Exception:
         return JsonResponse({'error': "Noto'g'ri so'rov"}, status=400)
@@ -299,9 +354,9 @@ def grant_test_submit(request, slug):
         if is_correct:
             score += 1
         details[str(q.id)] = {
-            'chosen':     chosen_id,
-            'correct':    str(correct.id) if correct else None,
-            'is_correct': is_correct,
+            'chosen':      chosen_id,
+            'correct':     str(correct.id) if correct else None,
+            'is_correct':  is_correct,
             'explanation': q.explanation,
         }
 

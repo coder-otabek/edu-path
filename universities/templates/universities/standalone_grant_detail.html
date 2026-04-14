@@ -187,7 +187,7 @@
       </p>
       <div class="sg-videos-list">
         {% for video in videos %}
-          <div class="sg-video-item">
+          <a href="{% url 'universities:standalone_video_detail' grant_slug=grant.slug video_id=video.id %}" class="sg-video-item" style="text-decoration:none;color:inherit;">
             <div class="sg-video-item__player">
               {% if video.youtube_url %}
                 <div class="video-embed-wrap" data-embed="{{ video.youtube_embed_url }}">
@@ -216,31 +216,13 @@
                 {% if video.duration %}<span class="sg-video-dur">⏱ {{ video.duration }}</span>{% endif %}
               </div>
             </div>
-          </div>
+          </a>
         {% endfor %}
       </div>
     </div>
   {% endif %}
 
   {# ── Footer ── #}
-  {# ── Test ── #}
-  {% if grant.test and grant.test.is_active %}
-    <div class="sg-test-banner">
-      <div class="sg-test-banner__info">
-        <span class="sg-test-banner__icon">📝</span>
-        <div>
-          <div class="sg-test-banner__title">{{ grant.test.title }}</div>
-          <div class="sg-test-banner__meta">
-            {{ grant.test.question_count }} ta savol
-            {% if grant.test.time_limit %} · {{ grant.test.time_limit }} daqiqa{% endif %}
-            · O'tish: {{ grant.test.pass_percent }}%
-          </div>
-        </div>
-      </div>
-      <a href="{% url 'universities:grant_test' grant.slug %}" class="btn-test">🚀 Testni boshlash</a>
-    </div>
-  {% endif %}
-
   <div class="sg-footer-actions">
     <a href="{% url 'universities:standalone_list' %}" class="btn btn--ghost">
       <span data-i18n="standalone_back">← Grantlarga qaytish</span>
@@ -287,29 +269,44 @@
 .sg-hero__site:hover { text-decoration: underline; }
 
 /* Info grid */
-.sg-info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.sg-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
 .sg-info-card {
   display: flex; align-items: flex-start; gap: 10px;
-  background: var(--bg-card);
-  border: 1.5px solid var(--border-color);
-  border-radius: 14px; padding: 14px 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
-  transition: border-color .2s;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px; padding: 14px 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: border-color .2s, background .2s;
 }
-.sg-info-card:hover { border-color: var(--accent); }
-.sg-info-card--warn {
-  border-color: rgba(var(--accent-rgb, 99,102,241), .35);
-  background: var(--bg-card);
+[data-theme="light"] .sg-info-card {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
+.sg-info-card:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.25);
+}
+[data-theme="light"] .sg-info-card:hover {
+  background: rgba(255,255,255,0.9);
+  border-color: var(--accent);
+}
+.sg-info-card--warn { border-color: rgba(255,255,255,0.12); }
 .sg-info-card__icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
 .sg-info-card__label {
-  font-size: .72rem; font-weight: 500;
+  font-size: .68rem; font-weight: 600;
   color: var(--text-muted);
-  margin-bottom: 4px; letter-spacing: .02em;
+  margin-bottom: 4px; letter-spacing: .06em;
   text-transform: uppercase;
 }
 .sg-info-card__val {
-  font-size: .95rem; font-weight: 700;
+  font-size: .92rem; font-weight: 700;
   color: var(--text-primary);
   word-break: break-word; line-height: 1.3;
 }

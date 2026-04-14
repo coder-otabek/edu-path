@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ video.title }} — {{ grant.name }}{% endblock %}
+
+{% block content %}
+<div class="video-detail-page">
+
+  {# ── Breadcrumb ── #}
+  <nav class="breadcrumb">
+    <a href="{% url 'universities:standalone_list' %}">Grantlar</a>
+    <span>›</span>
+    <a href="{{ grant.get_absolute_url }}">{{ grant.name }}</a>
+    <span>›</span>
+    <span>{{ video.title }}</span>
+  </nav>
+
+  {# ── Video player ── #}
+  <div class="vd-player-wrap">
+    {% if video.youtube_url %}
+      <div class="vd-youtube" id="ytPlayer">
+        <div class="vd-thumb" id="ytThumb" onclick="loadYoutube()">
+          {% if video.thumbnail %}
+            <img src="{{ video.thumbnail.url }}" alt="{{ video.title }}" class="vd-thumb__img">
+          {% else %}
+            <div class="vd-thumb__placeholder">🎬</div>
+          {% endif %}
+          <div class="vd-thumb__play">
+            <div class="vd-thumb__play-btn">▶</div>
+          </div>
+          {% if video.duration %}
+            <span class="vd-thumb__dur">{{ video.duration }}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% elif video.video_file %}
+      <video class="vd-native" controls preload="metadata" id="nativePlayer"
+             poster="{% if video.thumbnail %}{{ video.thumbnail.url }}{% endif %}">
+        <source src="{{ video.video_file.url }}">
+      </video>
+    {% endif %}
+  </div>
+
+  {# ── Video info ── #}
+  <div class="vd-info">
+    <div class="vd-info__top">
+      <div>
+        <div class="vd-info__num">{{ current_num }} / {{ total_num }} — video dars</div>
+        <h1 class="vd-info__title">{{ video.title }}</h1>
+        {% if video.description %}
+          <p class="vd-info__desc">{{ video.description }}</p>
+        {% endif %}
+      </div>
+      {% if video.duration %}
+        <span class="vd-info__dur">⏱ {{ video.duration }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Test banner ── #}
+  {% if has_test %}
+    <div class="vd-test-banner" id="testBanner">
+      <div class="vd-test-banner__left">
+        <span class="vd-test-banner__icon">📝</span>
+        <div>
+          <div class="vd-test-banner__title">{{ test.title }}</div>
+          <div class="vd-test-banner__meta">
+            {{ test.question_count }} ta savol
+            {% if test.time_limit %} · {{ test.time_limit }} daqiqa{% endif %}
+            · O'tish: {{ test.pass_percent }}%
+          </div>
+          {% if last_result %}
+            <div class="vd-test-banner__last">
+              Oxirgi natija:
+              <span class="{% if last_result.is_passed %}text-success{% else %}text-danger{% endif %}">
+                {{ last_result.percent }}% — {{ last_result.grade }}
+              </span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'universities:video_test' grant_slug=grant.slug video_id=video.id %}"
+         class="vd-test-btn">
+        {% if last_result %}🔄 Qayta topshirish{% else %}🚀 Testni boshlash{% endif %}
+      </a>
+    </div>
+  {% endif %}
+
+  {# ── Nav tugmalar ── #}
+  <div class="vd-nav">
+    {% if prev_video %}
+      <a href="{% url 'universities:standalone_video_detail' grant_slug=grant.slug video_id=prev_video.id %}"
+         class="vd-nav__btn vd-nav__btn--prev">
+        ← {{ prev_video.title|truncatechars:30 }}
+      </a>
+    {% else %}
+      <a href="{{ grant.get_absolute_url }}" class="vd-nav__btn vd-nav__btn--back">
+        ← Grantga qaytish
+      </a>
+    {% endif %}
+
+    {% if next_video %}
+      <a href="{% url 'universities:standalone_video_detail' grant_slug=grant.slug video_id=next_video.id %}"
+         class="vd-nav__btn vd-nav__btn--next">
+        {{ next_video.title|truncatechars:30 }} →
+      </a>
+    {% endif %}
+  </div>
+
+  {# ── Video darslar ro'yxati ── #}
+  <div class="vd-list-section">
+    <h3 class="vd-list-section__title">📋 Barcha video darslar</h3>
+    <div class="vd-list">
+      {% for v in videos %}
+        <a href="{% url 'universities:standalone_video_detail' grant_slug=grant.slug video_id=v.id %}"
+           class="vd-list-item {% if v.id == video.id %}vd-list-item--active{% endif %}">
+          <div class="vd-list-item__num">{{ forloop.counter }}</div>
+          <div class="vd-list-item__info">
+            <div class="vd-list-item__title">{{ v.title }}</div>
+            {% if v.duration %}<div class="vd-list-item__dur">⏱ {{ v.duration }}</div>{% endif %}
+          </div>
+          {% with has_test=v.has_video %}
+            {% endwith %}
+          {% if v.id == video.id %}
+            <span class="vd-list-item__playing">▶</span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.video-detail-page { max-width: 900px; margin: 0 auto; padding: 16px 16px 60px; }
+
+.breadcrumb { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--text-muted); margin-bottom: 16px; flex-wrap: wrap; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Player */
+.vd-player-wrap { background: #000; border-radius: 14px; overflow: hidden; margin-bottom: 16px; aspect-ratio: 16/9; position: relative; }
+.vd-youtube, .vd-native { width: 100%; height: 100%; }
+.vd-native { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.vd-thumb { position: relative; width: 100%; height: 100%; cursor: pointer; }
+.vd-thumb__img { width: 100%; height: 100%; object-fit: cover; }
+.vd-thumb__placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4rem; background: #111; color: rgba(255,255,255,.3); }
+.vd-thumb__play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.vd-thumb__play-btn { width: 70px; height: 70px; background: rgba(255,255,255,.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #111; transition: transform .2s; }
+.vd-thumb:hover .vd-thumb__play-btn { transform: scale(1.1); }
+.vd-thumb__dur { position: absolute; bottom: 10px; right: 12px; background: rgba(0,0,0,.75); color: #fff; font-size: .75rem; font-weight: 600; padding: 3px 8px; border-radius: 5px; }
+.vd-youtube iframe { width: 100%; height: 100%; border: none; display: block; }
+
+/* Info */
+.vd-info { margin-bottom: 14px; }
+.vd-info__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.vd-info__num   { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+.vd-info__title { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin: 0 0 6px; }
+.vd-info__desc  { font-size: .88rem; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+.vd-info__dur   { font-size: .82rem; color: var(--text-muted); white-space: nowrap; }
+
+/* Test banner */
+.vd-test-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--accent-soft), rgba(99,102,241,.08));
+  border: 1.5px solid var(--accent);
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 16px;
+}
+.vd-test-banner__left { display: flex; align-items: center; gap: 12px; }
+.vd-test-banner__icon { font-size: 1.8rem; }
+.vd-test-banner__title { font-size: .95rem; font-weight: 700; color: var(--text-primary); }
+.vd-test-banner__meta  { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+.vd-test-banner__last  { font-size: .78rem; margin-top: 3px; }
+.text-success { color: #10b981; font-weight: 600; }
+.text-danger  { color: #ef4444; font-weight: 600; }
+.vd-test-btn {
+  background: var(--accent); color: #fff;
+  padding: 10px 20px; border-radius: 10px;
+  text-decoration: none; font-size: .88rem; font-weight: 600;
+  white-space: nowrap; transition: opacity .2s; flex-shrink: 0;
+}
+.vd-test-btn:hover { opacity: .88; color: #fff; }
+
+/* Nav */
+.vd-nav { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.vd-nav__btn { padding: 10px 16px; border-radius: 10px; border: 1.5px solid var(--border-color); color: var(--text-secondary); text-decoration: none; font-size: .85rem; font-weight: 500; transition: all .2s; max-width: 48%; }
+.vd-nav__btn:hover { border-color: var(--accent); color: var(--accent); }
+.vd-nav__btn--next { margin-left: auto; text-align: right; }
+
+/* Video list */
+.vd-list-section { margin-top: 8px; }
+.vd-list-section__title { font-size: .9rem; font-weight: 700; color: var(--text-primary); margin: 0 0 10px; }
+.vd-list { display: flex; flex-direction: column; gap: 6px; }
+.vd-list-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1.5px solid var(--border-color); border-radius: 10px; text-decoration: none; color: inherit; transition: all .2s; }
+.vd-list-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+.vd-list-item--active { border-color: var(--accent); background: var(--accent-soft); }
+.vd-list-item__num { width: 26px; height: 26px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; flex-shrink: 0; color: var(--text-primary); }
+.vd-list-item--active .vd-list-item__num { background: var(--accent); color: #fff; }
+.vd-list-item__title { font-size: .88rem; font-weight: 500; color: var(--text-primary); }
+.vd-list-item__dur   { font-size: .74rem; color: var(--text-muted); margin-top: 2px; }
+.vd-list-item__test  { margin-left: auto; font-size: .85rem; }
+.vd-list-item__playing { color: var(--accent); font-size: .85rem; margin-left: auto; }
+
+@media (max-width: 600px) {
+  .vd-nav__btn { max-width: 100%; }
+  .vd-test-banner { flex-direction: column; align-items: flex-start; }
+  .vd-test-btn { width: 100%; text-align: center; box-sizing: border-box; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if video.youtube_url %}
+const EMBED_URL = "{{ video.youtube_embed_url }}";
+function loadYoutube() {
+  const thumb   = document.getElementById('ytThumb');
+  const iframe  = document.createElement('iframe');
+  iframe.src    = EMBED_URL + '?autoplay=1&rel=0';
+  iframe.allow  = 'autoplay; encrypted-media; picture-in-picture';
+  iframe.allowFullscreen = true;
+  iframe.style.cssText   = 'width:100%;height:100%;border:none;display:block;';
+  thumb.replaceWith(iframe);
+}
+{% endif %}
+</script>
+{% endblock %}

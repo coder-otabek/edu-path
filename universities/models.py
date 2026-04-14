@@ -173,7 +173,10 @@ class GrantVideo(models.Model):
         ordering            = ['grant', 'order']
 
     def __str__(self):
-        return f"{self.grant.name} — {self.title}"
+        try:
+            return f"{self.video.grant.name} | {self.video.title} — {self.title}"
+        except Exception:
+            return self.title
 
     @property
     def youtube_embed_url(self):
@@ -303,7 +306,10 @@ class StandaloneGrantVideo(models.Model):
         ordering            = ['grant', 'order']
 
     def __str__(self):
-        return f"{self.grant.name} — {self.title}"
+        try:
+            return f"{self.video.grant.name} | {self.video.title} — {self.title}"
+        except Exception:
+            return self.title
 
     @property
     def youtube_embed_url(self):
@@ -410,9 +416,9 @@ class EssaySample(models.Model):
 
 # ─── Grant Test ──────────────────────────────────────────────
 class GrantTest(models.Model):
-    grant        = models.OneToOneField(
-        StandaloneGrant, on_delete=models.CASCADE,
-        related_name='test', verbose_name="Grant"
+    video        = models.OneToOneField(
+        StandaloneGrantVideo, on_delete=models.CASCADE,
+        related_name='test', verbose_name="Video dars"
     )
     title        = models.CharField("Test sarlavhasi", max_length=255)
     description  = models.TextField("Tavsif", blank=True,
@@ -433,7 +439,10 @@ class GrantTest(models.Model):
         verbose_name_plural = "Grant Testlari"
 
     def __str__(self):
-        return f"{self.grant.name} — {self.title}"
+        try:
+            return f"{self.video.grant.name} | {self.video.title} — {self.title}"
+        except Exception:
+            return self.title
 
     @property
     def question_count(self):
