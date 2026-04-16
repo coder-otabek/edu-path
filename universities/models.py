@@ -277,10 +277,9 @@ class StandaloneGrantVideo(models.Model):
         url = self.youtube_url or ''
         # 2. Bunny.net thumbnail
         if 'mediadelivery.net/embed/' in url:
-            parts      = url.rstrip('/').split('/')
-            video_id   = parts[-1].split('?')[0]
-            library_id = parts[-2]
-            return f'https://vz-{library_id}.b-cdn.net/{video_id}/thumbnail.jpg'
+            parts    = url.rstrip('/').split('/')
+            video_id = parts[-1].split('?')[0]
+            return f'https://vz-0b8beaf2-b26.b-cdn.net/{video_id}/thumbnail.jpg'
         # 3. YouTube thumbnail
         if 'youtu' in url:
             vid = None
