@@ -57,11 +57,9 @@ class University(models.Model):
     country     = models.CharField("Mamlakat", max_length=10, choices=COUNTRY_CHOICES, default='uz')
     city        = models.CharField("Shahar", max_length=100, blank=True)
     grant_type  = models.CharField("Grant turi", max_length=10, choices=GRANT_TYPE_CHOICES, default='foreign')
-
     website     = models.URLField("Rasmiy sayt", blank=True)
     description = models.TextField("Tavsif", blank=True)
     ai_summary  = models.TextField("AI xulosasi", blank=True)
-
     min_ielts_score  = models.FloatField("Min IELTS", null=True, blank=True)
     min_sat_score    = models.PositiveIntegerField("Min SAT", null=True, blank=True)
     min_gpa          = models.FloatField("Min GPA", null=True, blank=True)
@@ -273,35 +271,18 @@ class StandaloneGrantVideo(models.Model):
 
     @property
     def get_thumbnail(self):
+        # 1. Admin yuklagan rasm
         if self.thumbnail:
             return self.thumbnail.url
         url = self.youtube_url or ''
+        # 2. Bunny.net thumbnail
         if 'mediadelivery.net/embed/' in url:
-            parts = url.rstrip('/').split('/')
+            parts      = url.rstrip('/').split('/')
             video_id   = parts[-1].split('?')[0]
             library_id = parts[-2]
             return f'https://vz-{library_id}.b-cdn.net/{video_id}/thumbnail.jpg'
+        # 3. YouTube thumbnail
         if 'youtu' in url:
-            if 'youtu.be/' in url:
-                vid = url.split('youtu.be/')[-1].split('?')[0]
-            else:
-                import urllib.parse as up
-                vid = up.parse_qs(up.urlparse(url).query).get('v', [''])[0]
-            if vid:
-                return f'https://img.youtube.com/vi/{vid}/mqdefault.jpg'
-        return ''
-
-    @property
-    def has_video(self):
-        return bool(self.video_file or self.youtube_url)
-
-    @property
-    def get_thumbnail(self):
-        """Thumbnail URL qaytaradi: admin yuklagan > YouTube avtomatik > bo'sh"""
-        if self.thumbnail:
-            return self.thumbnail.url
-        if self.youtube_url:
-            url = self.youtube_url.strip()
             vid = None
             if 'youtu.be/' in url:
                 vid = url.split('youtu.be/')[-1].split('?')[0]
@@ -312,6 +293,10 @@ class StandaloneGrantVideo(models.Model):
             if vid:
                 return f'https://img.youtube.com/vi/{vid}/mqdefault.jpg'
         return ''
+
+    @property
+    def has_video(self):
+        return bool(self.video_file or self.youtube_url)
 
 
 # ─── Universitet Kontent ─────────────────────────────────────
@@ -324,7 +309,6 @@ class UniversityContent(models.Model):
         ('audio', 'Audio'),
         ('video', 'Video'),
     ]
-
     university   = models.ForeignKey(
         University, on_delete=models.CASCADE,
         related_name='contents', verbose_name="Universitet"
