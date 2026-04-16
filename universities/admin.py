@@ -2,6 +2,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.core.exceptions import ValidationError
+# nested_admin'dan kerakli klasslarni chaqiramiz
 from nested_admin import NestedTabularInline, NestedStackedInline, NestedModelAdmin
 
 from .models import (
@@ -44,9 +45,10 @@ class StandaloneGrantVideoInline(admin.TabularInline):
     fields   = ['title', 'order', 'youtube_url', 'video_file', 'duration', 'is_published']
     ordering = ['order']
 
-# ─── NESTED INLINE'LAR ──────────────────────────────────────
+# ─── NESTED INLINE'LAR (SAVOL VA VARIANTLAR) ──────────────────
 
 class GrantChoiceInline(NestedTabularInline):
+    """Eng ichki qatlam: Javob variantlari"""
     model      = GrantChoice
     extra      = 4
     min_num    = 3
@@ -55,19 +57,23 @@ class GrantChoiceInline(NestedTabularInline):
     ordering   = ['order']
 
 class GrantQuestionInline(NestedStackedInline):
+    """O'rta qatlam: Savollar"""
     model   = GrantQuestion
     extra   = 1
-    inlines = [GrantChoiceInline]
+    inlines = [GrantChoiceInline] # Savol ichida variantlar chiqadi
     fields  = ['text', 'order', 'explanation']
+    # 'collapse' klassini olib tashladik, Jazzmin bilan yaxshiroq chiqishi uchun
     classes = ['extrapretty']
 
-# ─── GRANT TEST ──────────────────────────────────────────────
+# ─── GRANT TEST (ASOSIY ADMIN) ──────────────────────────────
 
 @admin.register(GrantTest)
-class GrantTestAdmin(NestedModelAdmin):
+class GrantTestAdmin(NestedModelAdmin): # NestedModelAdmin muhim!
     list_display  = ['title', 'video_display', 'is_active']
-    inlines       = [GrantQuestionInline]
+    inlines       = [GrantQuestionInline] # Test ichida savollar va variantlar
     save_on_top   = True
+
+    # MUHIM: Jazzmin tablarini test qilish uchun fieldsets'ni soddalashtiramiz
     fieldsets = (
         ("Test Sozlamalari", {
             'fields': ('video', 'is_active', 'title', 'description', 'time_limit', 'pass_percent'),
@@ -77,16 +83,17 @@ class GrantTestAdmin(NestedModelAdmin):
     def video_display(self, obj):
         try:
             return f"{obj.video.grant.name} | {obj.video.title}"
-        except Exception:
+        except:
             return "—"
     video_display.short_description = "Video dars"
 
-# ─── QOLGAN ADMINLAR ─────────────────────────────────────────
+# ─── QOLGAN ADMINLAR ────────────────────────────────────────
 
 @admin.register(University)
 class UniversityAdmin(admin.ModelAdmin):
     list_display = ['name', 'country', 'city', 'is_published']
     inlines      = [GrantInline, UniversityContentInline]
+    # ... qolgan kodlar o'zgarishsiz qoladi
 
 @admin.register(StandaloneGrant)
 class StandaloneGrantAdmin(admin.ModelAdmin):
@@ -107,8 +114,8 @@ class StandaloneGrantAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
         ("Tafsilotlar", {
-            'fields': ('description', 'directions', 'requirements',
-                       'amount', 'deadline', 'deadline_text'),
+            'fields': ('description', 'founded_year', 'directions', 'requirements',
+                       'winners_count', 'amount', 'deadline', 'deadline_text'),
         }),
         ("Talablar", {
             'fields': ('min_ielts', 'min_gpa'),

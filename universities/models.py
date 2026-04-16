@@ -272,8 +272,46 @@ class StandaloneGrantVideo(models.Model):
         return url
 
     @property
+    def get_thumbnail(self):
+        if self.thumbnail:
+            return self.thumbnail.url
+        url = self.youtube_url or ''
+        if 'mediadelivery.net/embed/' in url:
+            parts = url.rstrip('/').split('/')
+            video_id   = parts[-1].split('?')[0]
+            library_id = parts[-2]
+            return f'https://vz-{library_id}.b-cdn.net/{video_id}/thumbnail.jpg'
+        if 'youtu' in url:
+            if 'youtu.be/' in url:
+                vid = url.split('youtu.be/')[-1].split('?')[0]
+            else:
+                import urllib.parse as up
+                vid = up.parse_qs(up.urlparse(url).query).get('v', [''])[0]
+            if vid:
+                return f'https://img.youtube.com/vi/{vid}/mqdefault.jpg'
+        return ''
+
+    @property
     def has_video(self):
         return bool(self.video_file or self.youtube_url)
+
+    @property
+    def get_thumbnail(self):
+        """Thumbnail URL qaytaradi: admin yuklagan > YouTube avtomatik > bo'sh"""
+        if self.thumbnail:
+            return self.thumbnail.url
+        if self.youtube_url:
+            url = self.youtube_url.strip()
+            vid = None
+            if 'youtu.be/' in url:
+                vid = url.split('youtu.be/')[-1].split('?')[0]
+            elif 'watch?v=' in url:
+                vid = url.split('watch?v=')[-1].split('&')[0]
+            elif 'youtube.com/embed/' in url:
+                vid = url.split('youtube.com/embed/')[-1].split('?')[0]
+            if vid:
+                return f'https://img.youtube.com/vi/{vid}/mqdefault.jpg'
+        return ''
 
 
 # ─── Universitet Kontent ─────────────────────────────────────
