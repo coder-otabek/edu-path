@@ -178,49 +178,19 @@
     </div>
   {% endif %}
 
-  {# ── Video qo'llanmalar ── #}
-  {% if videos %}
-    <div class="sg-videos-section">
-      <h2 class="sg-videos-section__title" data-i18n="grant_detail_videos_title">🎬 Video qo'llanmalar</h2>
-      <p class="sg-videos-section__sub" data-i18n="grant_detail_videos_sub">
-        Ushbu grantni qanday olish haqida bosqichma-bosqich qo'llanmalar
-      </p>
-      <div class="sg-videos-list">
-        {% for video in videos %}
-          <a href="{% url 'universities:standalone_video_detail' grant_slug=grant.slug video_id=video.id %}" class="sg-video-item" style="text-decoration:none;color:inherit;">
-            <div class="sg-video-item__player">
-              {% if video.youtube_url %}
-                <div class="video-embed-wrap" data-embed="{{ video.youtube_embed_url }}">
-                  <div class="video-thumbnail" onclick="loadVideo(this)">
-                    {% if video.thumbnail %}
-                      <img src="{{ video.thumbnail.url }}" alt="{{ video.title }}" class="video-thumb-img">
-                    {% else %}
-                      <div class="video-thumb-placeholder">▶</div>
-                    {% endif %}
-                    <div class="video-thumb-play"><div class="video-thumb-play__btn">▶</div></div>
-                    {% if video.duration %}<span class="video-thumb-duration">{{ video.duration }}</span>{% endif %}
-                  </div>
-                </div>
-              {% elif video.video_file %}
-                <video class="video-native" controls preload="metadata"
-                       poster="{% if video.thumbnail %}{{ video.thumbnail.url }}{% endif %}">
-                  <source src="{{ video.video_file.url }}">
-                </video>
-              {% endif %}
-            </div>
-            <div class="sg-video-item__info">
-              <div class="sg-video-num">{{ forloop.counter }}</div>
-              <div>
-                <h3 class="sg-video-title">{{ video.title }}</h3>
-                {% if video.description %}<p class="sg-video-desc">{{ video.description }}</p>{% endif %}
-                {% if video.duration %}<span class="sg-video-dur">⏱ {{ video.duration }}</span>{% endif %}
-              </div>
-            </div>
-          </a>
-        {% endfor %}
+  {# ── Video qo'llanmalar havolasi ── #}
+  {% with vc=grant.videos.count %}
+  {% if vc %}
+    <a href="{% url 'universities:standalone_grant_videos' grant.slug %}" class="sg-videos-link-card">
+      <div class="sg-videos-link-card__icon">🎬</div>
+      <div class="sg-videos-link-card__body">
+        <div class="sg-videos-link-card__title" data-i18n="grant_detail_videos_title">Video qo'llanmalar</div>
+        <div class="sg-videos-link-card__sub">{{ vc }} ta video dars mavjud</div>
       </div>
-    </div>
+      <div class="sg-videos-link-card__arrow">›</div>
+    </a>
   {% endif %}
+  {% endwith %}
 
   {# ── Footer ── #}
   <div class="sg-footer-actions">
@@ -335,30 +305,20 @@
 .sg-uni-item__loc  { font-size: .75rem; color: var(--text-muted); }
 .sg-uni-item__arrow { margin-left: auto; color: var(--text-muted); font-size: 1.2rem; }
 
-/* Videos */
-.sg-videos-section { margin-bottom: 20px; }
-.sg-videos-section__title { font-size: 1.1rem; font-weight: 700; margin: 0 0 4px; color: var(--text-primary); }
-.sg-videos-section__sub   { font-size: .82rem; color: var(--text-muted); margin: 0 0 12px; }
-.sg-videos-list { display: flex; flex-direction: column; gap: 12px; }
-.sg-video-item { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; }
-.sg-video-item__info { display: flex; gap: 12px; padding: 12px 14px; align-items: flex-start; }
-.sg-video-num { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: .78rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.sg-video-title { font-size: .9rem; font-weight: 600; margin: 0 0 3px; color: var(--text-primary); }
-.sg-video-desc  { font-size: .8rem; color: var(--text-secondary); margin: 0 0 3px; }
-.sg-video-dur   { font-size: .75rem; color: var(--text-muted); }
-
-/* Video embed (reuse from grant_detail) */
-.video-embed-wrap { width: 100%; }
-.video-thumbnail { position: relative; width: 100%; padding-top: 56.25%; cursor: pointer; background: #000; overflow: hidden; }
-.video-thumb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .3s; }
-.video-thumbnail:hover .video-thumb-img { opacity: .8; }
-.video-thumb-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e1b4b, #312e81); font-size: 3rem; color: rgba(255,255,255,.4); }
-.video-thumb-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-.video-thumb-play__btn { width: 56px; height: 56px; background: rgba(255,255,255,.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #1e1b4b; box-shadow: 0 4px 20px rgba(0,0,0,.3); transition: transform .2s; }
-.video-thumbnail:hover .video-thumb-play__btn { transform: scale(1.1); }
-.video-thumb-duration { position: absolute; bottom: 8px; right: 10px; background: rgba(0,0,0,.75); color: #fff; font-size: .7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
-.video-embed-wrap iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
-.video-native { width: 100%; display: block; background: #000; max-height: 360px; }
+/* Video havola kartasi */
+.sg-videos-link-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; margin-bottom: 16px;
+  background: var(--bg-card); border: 1.5px solid var(--accent);
+  border-radius: 14px; text-decoration: none; color: inherit;
+  transition: background .2s, box-shadow .2s;
+}
+.sg-videos-link-card:hover { background: var(--accent-soft); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.sg-videos-link-card__icon { font-size: 2rem; flex-shrink: 0; }
+.sg-videos-link-card__body { flex: 1; }
+.sg-videos-link-card__title { font-size: .95rem; font-weight: 700; color: var(--text-primary); }
+.sg-videos-link-card__sub   { font-size: .8rem; color: var(--text-muted); margin-top: 2px; }
+.sg-videos-link-card__arrow { font-size: 1.6rem; color: var(--accent); font-weight: 700; }
 
 /* Footer */
 .sg-footer-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--border-color); }
@@ -398,20 +358,4 @@
 .btn-test:hover { opacity: .88; color: #fff; }
 
 </style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function loadVideo(thumbEl) {
-  const wrap  = thumbEl.closest('.video-embed-wrap');
-  const embed = wrap.dataset.embed;
-  if (!embed) return;
-  const iframe = document.createElement('iframe');
-  iframe.src             = embed + '?autoplay=1&rel=0';
-  iframe.allow           = 'autoplay; encrypted-media; picture-in-picture';
-  iframe.allowFullscreen = true;
-  iframe.loading         = 'lazy';
-  thumbEl.replaceWith(iframe);
-}
-</script>
 {% endblock %}

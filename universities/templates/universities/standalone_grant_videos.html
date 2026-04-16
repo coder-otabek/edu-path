@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ grant.name }} — Video darslar{% endblock %}
+
+{% block content %}
+<div class="page-grant-videos">
+
+  {# ── Breadcrumb ── #}
+  <nav class="breadcrumb">
+    <a href="{% url 'universities:standalone_list' %}" data-i18n="standalone_title">Grantlar</a>
+    <span>›</span>
+    <a href="{{ grant.get_absolute_url }}">{{ grant.name }}</a>
+    <span>›</span>
+    <span data-i18n="grant_detail_videos_title">Video darslar</span>
+  </nav>
+
+  {# ── Header ── #}
+  <div class="gv-header">
+    {% if grant.logo %}
+      <img src="{{ grant.logo.url }}" alt="{{ grant.name }}" class="gv-header__logo">
+    {% else %}
+      <div class="gv-header__logo-ph">💰</div>
+    {% endif %}
+    <div>
+      <h1 class="gv-header__title">🎬 Video darslar</h1>
+      <p class="gv-header__sub">{{ grant.name }}</p>
+    </div>
+  </div>
+
+  {# ── Video ro'yxati ── #}
+  {% if videos %}
+    <div class="gv-list">
+      {% for video in videos %}
+        <a href="{% url 'universities:standalone_video_detail' grant_slug=grant.slug video_id=video.id %}"
+           class="gv-item" style="text-decoration:none;color:inherit;">
+
+          {# Thumbnail #}
+          <div class="gv-item__thumb">
+            {% if video.thumbnail %}
+              <img src="{{ video.thumbnail.url }}" alt="{{ video.title }}"
+                   style="width:100%;height:100%;object-fit:cover;"
+                   onerror="this.style.display='none';">
+            {% elif video.youtube_url %}
+              {% with yt=video.youtube_embed_url %}
+                {% if yt %}
+                  {# YouTube thumbnail #}
+                  <img src="https://img.youtube.com/vi/{{ video.youtube_url|cut:'https://youtu.be/'|cut:'https://www.youtube.com/watch?v='|truncatechars:11 }}/mqdefault.jpg"
+                       alt="{{ video.title }}"
+                       style="width:100%;height:100%;object-fit:cover;"
+                       onerror="this.style.display='none';">
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+            {# Play tugmasi #}
+            <div class="gv-item__play">
+              <div class="gv-item__play-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            </div>
+            {% if video.duration %}
+              <span class="gv-item__dur">{{ video.duration }}</span>
+            {% endif %}
+          </div>
+
+          {# Info #}
+          <div class="gv-item__info">
+            <div class="gv-item__num">{{ forloop.counter }}</div>
+            <div class="gv-item__body">
+              <div class="gv-item__title">{{ video.title }}</div>
+              {% if video.description %}
+                <div class="gv-item__desc">{{ video.description|truncatechars:80 }}</div>
+              {% endif %}
+            </div>
+            <div class="gv-item__arrow">›</div>
+          </div>
+
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="gv-empty">
+      <div>🎬</div>
+      <p>Video darslar hali qo'shilmagan</p>
+    </div>
+  {% endif %}
+
+  {# ── Orqaga ── #}
+  <div style="margin-top:24px;">
+    <a href="{{ grant.get_absolute_url }}" class="btn btn--ghost">
+      ← {{ grant.name }} ga qaytish
+    </a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-grant-videos { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.breadcrumb { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--text-muted); margin-bottom: 20px; flex-wrap: wrap; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+.gv-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.gv-header__logo { width: 52px; height: 52px; border-radius: 10px; object-fit: contain; border: 1px solid var(--border-color); }
+.gv-header__logo-ph { width: 52px; height: 52px; border-radius: 10px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.gv-header__title { font-size: 1.2rem; font-weight: 700; margin: 0 0 2px; color: var(--text-primary); }
+.gv-header__sub   { font-size: .85rem; color: var(--text-muted); margin: 0; }
+
+.gv-list { display: flex; flex-direction: column; gap: 10px; }
+
+.gv-item {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 14px; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: border-color .2s, box-shadow .2s;
+}
+.gv-item:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+
+.gv-item__thumb {
+  position: relative; width: 100%;
+  aspect-ratio: 16/9; background: var(--border-color);
+  overflow: hidden;
+}
+.gv-item__play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.25);
+}
+.gv-item__play-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+  transition: transform .15s;
+}
+.gv-item:hover .gv-item__play-btn { transform: scale(1.1); }
+.gv-item__dur {
+  position: absolute; bottom: 8px; right: 10px;
+  background: rgba(0,0,0,.7); color: #fff;
+  font-size: .7rem; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px;
+}
+
+.gv-item__info {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+}
+.gv-item__num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent);
+  font-size: .78rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.gv-item__body { flex: 1; min-width: 0; }
+.gv-item__title { font-weight: 600; font-size: .9rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gv-item__desc  { font-size: .78rem; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gv-item__arrow { font-size: 1.4rem; color: var(--text-muted); flex-shrink: 0; }
+
+.gv-empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+.gv-empty div { font-size: 2.5rem; margin-bottom: 10px; }
+
+.btn--ghost {
+  display: inline-block; padding: 9px 18px;
+  border-radius: 10px; border: 1.5px solid var(--border-color);
+  color: var(--text-secondary); text-decoration: none;
+  font-size: .88rem; font-weight: 500; transition: all .2s;
+}
+.btn--ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (min-width: 600px) {
+  .gv-item { flex-direction: row; }
+  .gv-item__thumb { width: 200px; min-width: 200px; aspect-ratio: unset; height: 112px; }
+}
+</style>
+{% endblock %}

@@ -97,9 +97,35 @@ class UniversityAdmin(admin.ModelAdmin):
 
 @admin.register(StandaloneGrant)
 class StandaloneGrantAdmin(admin.ModelAdmin):
-    list_display = ['name', 'country', 'is_active']
-    inlines      = [StandaloneGrantVideoInline]
-    # ... qolgan kodlar o'zgarishsiz qoladi
+    list_display        = ['order', 'name', 'grant_type', 'country', 'is_active']
+    list_editable       = ['order', 'is_active']
+    list_display_links  = ['name']
+    list_filter         = ['grant_type', 'country', 'is_active']
+    search_fields       = ['name', 'description']
+    ordering            = ['order', 'name']
+    inlines             = [StandaloneGrantVideoInline]
+    save_on_top         = True
+    fieldsets = (
+        ("Asosiy ma'lumotlar", {
+            'fields': ('order', 'name', 'slug', 'grant_type', 'country', 'degree', 'is_active'),
+        }),
+        ("Rasm", {
+            'fields': ('cover_image', 'logo'),
+            'classes': ('collapse',),
+        }),
+        ("Tafsilotlar", {
+            'fields': ('description', 'founded_year', 'directions', 'requirements',
+                       'winners_count', 'amount', 'deadline', 'deadline_text'),
+        }),
+        ("Talablar", {
+            'fields': ('min_ielts', 'min_gpa'),
+            'classes': ('collapse',),
+        }),
+        ("Havolalar", {
+            'fields': ('apply_url', 'official_site', 'universities'),
+            'classes': ('collapse',),
+        }),
+    )
 
 @admin.register(GrantTestResult)
 class GrantTestResultAdmin(admin.ModelAdmin):

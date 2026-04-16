@@ -240,6 +240,21 @@ def standalone_grant_detail(request, slug):
     })
 
 
+
+# ─── Mustaqil Grant Video darslari sahifasi ──────────────────
+@login_required
+def standalone_grant_videos(request, slug):
+    """Grant video darslari alohida sahifada"""
+    from .models import StandaloneGrant
+    grant  = get_object_or_404(StandaloneGrant, slug=slug, is_active=True)
+    videos = grant.videos.filter(is_published=True).order_by('order')
+
+    return render(request, 'universities/standalone_grant_videos.html', {
+        'grant':  grant,
+        'videos': videos,
+    })
+
+
 # ─── Grant Test ──────────────────────────────────────────────
 @login_required
 

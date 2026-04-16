@@ -244,6 +244,8 @@ class StandaloneGrant(models.Model):
 
     apply_url     = models.URLField("Ariza sahifasi", blank=True)
     official_site = models.URLField("Rasmiy sayt", blank=True)
+    order         = models.PositiveIntegerField("Tartib raqami", default=0,
+                                                help_text="Kichik raqam — ro'yxatda yuqorida turadi")
     is_active     = models.BooleanField("Faol", default=True)
     created_at    = models.DateTimeField(auto_now_add=True)
     updated_at    = models.DateTimeField(auto_now=True)
@@ -251,7 +253,7 @@ class StandaloneGrant(models.Model):
     class Meta:
         verbose_name        = "Mustaqil Grant"
         verbose_name_plural = "Mustaqil Grantlar"
-        ordering            = ['grant_type', 'name']
+        ordering            = ['order', 'name']
 
     def __str__(self):
         return f"{self.get_grant_type_display()} — {self.name}"

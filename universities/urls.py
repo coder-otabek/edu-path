@@ -9,6 +9,7 @@ urlpatterns = [
     path('grants/',                                                   views.standalone_grant_list,     name='grants'),
     path('standalone/',                                               views.standalone_grant_list,     name='standalone_list'),
     path('standalone/<slug:slug>/',                                   views.standalone_grant_detail,   name='standalone_grant_detail'),
+    path('standalone/<slug:slug>/videos/',                            views.standalone_grant_videos,   name='standalone_grant_videos'),
 
     # Video detail sahifasi
     path('standalone/<slug:grant_slug>/video/<int:video_id>/',        views.standalone_video_detail,   name='standalone_video_detail'),
