@@ -208,7 +208,7 @@ def essay_write_view(request):
                 user=request.user, title=title,
                 essay_type=essay_type, content=content, status='draft',
             )
-        _ai_review_essay(essay)
+        _ai_review_essay(essay, request.user)
         return redirect('dashboard:essay_detail', pk=essay.pk)
 
     return render(request, 'dashboard/essay_write.html', {'essay': essay})
@@ -236,27 +236,87 @@ def leaderboard_view(request):
     return render(request, 'dashboard/leaderboard.html', {'top_users': top_users})
 
 
-def _ai_review_essay(essay):
+def _ai_review_essay(essay, user=None):
     from ai_engine.services import get_ai_response
-    prompt = f"""Siz professional essay muharririsi siz.
-Quyidagi "{essay.get_essay_type_display()}" essayini baholab, JSON formatda javob bering.
 
-ESSAY MATNI:
+    # Foydalanuvchi tilini aniqlash
+    user_lang = 'uz'
+    if user:
+        user_lang = getattr(user, 'language', 'uz') or 'uz'
+
+    lang_map = {
+        'uz': (
+            "o'zbek tilida (lotin alifbosida)",
+            "Umumiy baho (2-3 gap)",
+            "Kuchli tomon",
+            "Zaif tomon",
+            "Tavsiya",
+            "Bu matnda AI yozganlik belgilari bor, chunki...",
+            "Uslub juda rasmiy",
+            "Shaxsiy tajriba mavjud",
+        ),
+        'ru': (
+            "на русском языке",
+            "Общая оценка (2-3 предложения)",
+            "Сильная сторона",
+            "Слабая сторона",
+            "Рекомендация",
+            "В этом тексте есть признаки AI, потому что...",
+            "Слишком формальный стиль",
+            "Присутствует личный опыт",
+        ),
+        'en': (
+            "in English",
+            "Overall assessment (2-3 sentences)",
+            "Strength",
+            "Weakness",
+            "Suggestion",
+            "This text shows AI signals because...",
+            "Very formal style",
+            "Personal experience present",
+        ),
+    }
+    (lang_instr, feedback_ex, strength_ex,
+     weakness_ex, suggestion_ex, reasoning_ex,
+     signal_ex, human_signal_ex) = lang_map.get(user_lang, lang_map['uz'])
+
+    prompt = f"""You are a professional essay editor and AI content detector.
+Evaluate the following "{essay.get_essay_type_display()}" essay and respond in JSON format.
+
+IMPORTANT: Write ALL text values (feedback, strengths, weaknesses, suggestions, reasoning, signals, human_signals) {lang_instr}.
+
+ESSAY TEXT:
 {essay.content[:3000]}
 
-FAQAT JSON FORMATDA:
+RESPOND ONLY IN THIS JSON FORMAT (no other text):
 {{
   "score": 78,
-  "feedback": "Umumiy baho (2-3 gap)",
-  "strengths": ["Kuchli tomon 1", "Kuchli tomon 2"],
-  "weaknesses": ["Zaif tomon 1", "Zaif tomon 2"],
-  "suggestions": ["Tavsiya 1", "Tavsiya 2", "Tavsiya 3"]
-}}"""
+  "feedback": "{feedback_ex}",
+  "strengths": ["{strength_ex} 1", "{strength_ex} 2"],
+  "weaknesses": ["{weakness_ex} 1", "{weakness_ex} 2"],
+  "suggestions": ["{suggestion_ex} 1", "{suggestion_ex} 2", "{suggestion_ex} 3"],
+  "ai_detection": {{
+    "ai_percentage": 35,
+    "verdict": "mixed",
+    "reasoning": "{reasoning_ex}",
+    "signals": ["{signal_ex}"],
+    "human_signals": ["{human_signal_ex}"]
+  }}
+}}
+
+ai_detection.verdict values (keep in English — code uses these):
+- "human" — 0-25% AI
+- "mixed"  — 26-74% AI
+- "ai"     — 75-100% AI
+
+ai_percentage: integer 0-100"""
+
     try:
         raw   = get_ai_response([{"role": "user", "content": prompt}])
         clean = raw.strip().lstrip('`').rstrip('`')
         if clean.startswith('json'): clean = clean[4:].strip()
         data  = json.loads(clean)
+
         essay.ai_score       = data.get('score', 0)
         essay.ai_feedback    = data.get('feedback', '')
         essay.ai_strengths   = json.dumps(data.get('strengths', []), ensure_ascii=False)
@@ -264,6 +324,18 @@ FAQAT JSON FORMATDA:
         essay.ai_suggestions = json.dumps(data.get('suggestions', []), ensure_ascii=False)
         essay.status         = 'reviewed'
         essay.ai_reviewed_at = timezone.now()
+
+        # AI Detection natijalarini saqlash
+        detection = data.get('ai_detection', {})
+        if detection:
+            essay.ai_detection_score   = detection.get('ai_percentage', 0)
+            essay.ai_detection_verdict = detection.get('verdict', 'human')
+            essay.ai_detection_details = json.dumps({
+                'reasoning':     detection.get('reasoning', ''),
+                'signals':       detection.get('signals', []),
+                'human_signals': detection.get('human_signals', []),
+            }, ensure_ascii=False)
+
         essay.save()
     except Exception as e:
         essay.ai_feedback = f"AI tahlil qila olmadi: {str(e)[:200]}"

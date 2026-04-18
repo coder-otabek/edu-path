@@ -127,6 +127,104 @@
     {% endwith %}
   {% endif %}
 
+  {# AI Detection natijasi #}
+  {% if essay.ai_detection_score is not None %}
+    {% with score=essay.ai_detection_score verdict=essay.ai_detection_verdict %}
+      <div class="card mb-16" style="
+        border-left:4px solid
+        {% if verdict == 'human' %}#059669
+        {% elif verdict == 'mixed' %}#D97706
+        {% else %}#DC2626{% endif %};">
+
+        {# Sarlavha #}
+        <div class="d-flex align-center gap-8 mb-12">
+          <span style="font-size:1.2rem;">
+            {% if verdict == 'human' %}🧑{% elif verdict == 'mixed' %}⚖️{% else %}🤖{% endif %}
+          </span>
+          <span style="font-weight:700;font-size:.95rem;" data-i18n="ai_detection_title">
+            AI Detection — Diagnostika
+          </span>
+          <span class="badge" style="margin-left:auto;
+            {% if verdict == 'human' %}background:#D1FAE5;color:#059669;
+            {% elif verdict == 'mixed' %}background:#FEF3C7;color:#D97706;
+            {% else %}background:#FEE2E2;color:#DC2626;{% endif %}
+            font-size:.72rem;padding:3px 8px;border-radius:100px;">
+            {% if verdict == 'human' %}<span data-i18n="ai_det_human">Inson yozgan ✅</span>
+            {% elif verdict == 'mixed' %}<span data-i18n="ai_det_mixed">Aralash ⚠️</span>
+            {% else %}<span data-i18n="ai_det_ai">AI yozgan 🤖</span>{% endif %}
+          </span>
+        </div>
+
+        {# Doira indikator + foiz #}
+        <div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;">
+          {# Progress bar #}
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:.75rem;color:var(--text-muted);" data-i18n="ai_det_human_label">Inson</span>
+              <span style="font-size:.75rem;color:var(--text-muted);" data-i18n="ai_det_ai_label">AI</span>
+            </div>
+            <div style="background:var(--border);border-radius:100px;height:12px;overflow:hidden;position:relative;">
+              {# Inson qismi (yashil) #}
+              <div style="position:absolute;left:0;top:0;height:100%;width:{{ score|floatformat:0 }}%;
+                background:{% if verdict == 'human' %}#10B981{% elif verdict == 'mixed' %}#F59E0B{% else %}#EF4444{% endif %};
+                border-radius:100px;transition:width 1s;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+              <span style="font-size:.8rem;font-weight:700;color:#059669;">{{ 100|add:score|add:"-100"|floatformat:0 }}%</span>
+              <span style="font-size:.8rem;font-weight:700;
+                {% if verdict == 'ai' %}color:#DC2626;
+                {% elif verdict == 'mixed' %}color:#D97706;
+                {% else %}color:#059669;{% endif %}">
+                {{ score|floatformat:0 }}% AI
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {# AI tahlil tafsilotlari #}
+        {% if essay.ai_detection_details %}
+          {% with details=essay.ai_detection_details|parse_json %}
+            {% if details.reasoning %}
+              <div style="font-size:.825rem;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;padding:10px;background:var(--bg-secondary);border-radius:8px;">
+                {{ details.reasoning }}
+              </div>
+            {% endif %}
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              {# AI belgilari #}
+              {% if details.signals %}
+                <div>
+                  <div style="font-size:.75rem;font-weight:700;color:#DC2626;margin-bottom:6px;" data-i18n="ai_det_signals">🤖 AI belgilari</div>
+                  {% for s in details.signals %}
+                    <div style="font-size:.75rem;color:var(--text-secondary);padding:3px 0;display:flex;gap:6px;">
+                      <span style="color:#DC2626;flex-shrink:0;">•</span>{{ s }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              {# Inson belgilari #}
+              {% if details.human_signals %}
+                <div>
+                  <div style="font-size:.75rem;font-weight:700;color:#059669;margin-bottom:6px;" data-i18n="ai_det_human_signals">🧑 Inson belgilari</div>
+                  {% for s in details.human_signals %}
+                    <div style="font-size:.75rem;color:var(--text-secondary);padding:3px 0;display:flex;gap:6px;">
+                      <span style="color:#059669;flex-shrink:0;">•</span>{{ s }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endwith %}
+        {% endif %}
+
+        <p style="font-size:.7rem;color:var(--text-muted);margin-top:10px;font-style:italic;" data-i18n="ai_det_disclaimer">
+          * Bu diagnostika taxminiy bo'lib, faqat ma'lumot uchun beriladi.
+        </p>
+      </div>
+    {% endwith %}
+  {% endif %}
+
   {# Essay matni #}
   <div class="card mb-16">
     <div class="d-flex align-center justify-between mb-12">

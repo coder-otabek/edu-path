@@ -33,6 +33,11 @@ class Essay(models.Model):
     ai_suggestions  = models.TextField("Tavsiyalar", blank=True)
     ai_reviewed_at  = models.DateTimeField("AI baholagan vaqt", null=True, blank=True)
 
+    # AI Detection
+    ai_detection_score   = models.FloatField("AI yozgan foizi", null=True, blank=True)  # 0-100
+    ai_detection_verdict = models.CharField("AI xulosa", max_length=20, blank=True)     # human/mixed/ai
+    ai_detection_details = models.TextField("AI tahlil tafsilotlari", blank=True)
+
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 

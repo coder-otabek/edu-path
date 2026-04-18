@@ -6,12 +6,12 @@ register = template.Library()
 
 @register.filter
 def parse_json(value):
-    """JSON string ni Python listga aylantiradi"""
+    """JSON string ni Python list yoki dict ga aylantiradi"""
     if not value:
         return []
     try:
         result = json.loads(value)
-        return result if isinstance(result, list) else []
+        return result if isinstance(result, (list, dict)) else []
     except (json.JSONDecodeError, TypeError):
         return []
 
