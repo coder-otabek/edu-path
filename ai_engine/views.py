@@ -9,6 +9,7 @@ from .models import RoadMap, ChatSession, ChatMessage
 from .services import get_ai_response
 from accounts.models import AbituriyentProfile
 
+
 QUICK_SUGGESTIONS = {
     'uz': [
         "💡 Menga mos universitetlarni tavsiya qil",
@@ -73,7 +74,6 @@ def chat_view(request):
     uni_query = request.GET.get('q', '')
     user_lang = getattr(request.user, 'language', 'uz') or 'uz'
 
-    # Prefill matni foydalanuvchi tiliga qarab
     prefill_templates = {
         'uz': f"{uni_query} haqida menga ma'lumot bering",
         'ru': f"Расскажите мне о {uni_query}",
@@ -104,7 +104,7 @@ def chat_send_view(request):
     if not user_msg:
         return JsonResponse({'error': "Xabar bo'sh"}, status=400)
 
-    # Session
+    # Session yaratish
     if session_id:
         session, _ = ChatSession.objects.get_or_create(
             id=session_id, user=request.user,
@@ -120,7 +120,6 @@ def chat_send_view(request):
     history     = list(session.messages.order_by('-created_at')[:20])[::-1]
     ai_messages = [{"role": m.role, "content": m.content} for m in history]
 
-    # Til
     lang_names = {'uz': "o'zbek", 'ru': 'rus', 'en': 'ingliz'}
     lang_name  = lang_names.get(user_lang, "o'zbek")
 
@@ -141,10 +140,10 @@ def chat_send_view(request):
     except Exception:
         profile_text = f"Ism: {request.user.get_full_name()}"
 
-    # Universitetlar bazasi
+    # Universitetlar
     try:
         from universities.models import University
-        unis      = University.objects.filter(is_published=True).prefetch_related('specialties')
+        unis = University.objects.filter(is_published=True).prefetch_related('specialties')
         unis_text = "\n\nUNIVERSITETLAR BAZASI:\n"
         if unis.exists():
             for uni in unis[:30]:
@@ -160,7 +159,7 @@ def chat_send_view(request):
     except Exception as e:
         unis_text = f"\n(Universitetlar bazasini yuklashda xato: {e})"
 
-    # Mustaqil grantlar bazasi
+    # Grantlar — BU YERDA XATO TUZATILDI
     try:
         from universities.models import StandaloneGrant
         sgrants = StandaloneGrant.objects.filter(is_active=True)
@@ -172,7 +171,7 @@ def chat_send_view(request):
   Daraja: {g.get_degree_display()}
   Mukofot: {g.amount or "noma'lum"}
   Muddat: {g.deadline_text or "noma'lum"}
-  Kvota: {g.winners_count or "noma'lum"}
+  Kvota: {getattr(g, 'winners_count', None) or "noma'lum"}
   Talablar: {g.requirements[:200] if g.requirements else "ko'rsatilmagan"}
   Yo'nalishlar: {g.directions[:150] if g.directions else "ko'rsatilmagan"}"""
             if sgrants.filter(universities__isnull=False).exists():
@@ -182,44 +181,16 @@ def chat_send_view(request):
     except Exception as e:
         grants_text = f"\n(Grantlar bazasini yuklashda xato: {e})"
 
-    # Web search
-    def search_university_info(uni_name):
-        try:
-            import urllib.request, urllib.parse, json as _json
-            query = urllib.parse.quote(f"{uni_name} university official admissions requirements")
-            url = f"https://api.duckduckgo.com/?q={query}&format=json&no_html=1&skip_disambig=1"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=3) as r:
-                data = _json.loads(r.read())
-            abstract = data.get('AbstractText', '') or data.get('Answer', '')
-            return abstract[:500] if abstract else ''
-        except Exception:
-            return ''
-
-    web_info = ""
-    try:
-        from universities.models import University as _Uni
-        for _uni in _Uni.objects.filter(is_published=True)[:5]:
-            _info = search_university_info(_uni.name)
-            if _info:
-                web_info += f"\n[{_uni.name} - internet ma'lumoti]: {_info}"
-    except Exception:
-        pass
-
     system = f"""Siz EduPath platformasining AI maslahatchi siz.
 
 QATTIQ QOIDALAR:
-1. FAQAT ta'lim mavzularida javob bering: universitetlar, grantlar, stipendiyalar, qabul jarayoni, IELTS/SAT/TOEFL, essay, CV, xorijda o'qish.
-2. Grantlar haqida so'ralganda — AVVAL bizning GRANTLAR BAZASIDAN qidiring va u yerdan javob bering.
-3. Universitetlar haqida so'ralganda — AVVAL UNIVERSITETLAR BAZASIDAN qidiring.
-4. Bazada topilsa — aniq ma'lumot bering. Topilmasa — umumiy bilimdan foydalaning va "⚠️ Bu ma'lumot umumiy manbadan, rasmiy sayt orqali tekshiring." deb ogohlantiring.
-5. Hech qachon "admin paneldan qo'shilishi mumkin" dema — foydalanuvchiga bu kerak emas.
-6. FAQAT {lang_name} tilida javob bering!
+1. FAQAT ta'lim mavzularida javob bering.
+2. Grantlar haqida so'ralganda — AVVAL GRANTLAR BAZASIDAN qidiring.
+3. FAQAT {lang_name} tilida javob bering!
 
 {profile_text}
 {unis_text}
 {grants_text}
-{web_info if web_info else ''}
 
 Qisqa, aniq va foydali javob bering."""
 
